@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using Newtonsoft.Json;
+//using OCPP.Core.DatabaseOld;
 using OCPP.Core.Database;
 
 namespace OCPP.Core.Server
@@ -38,16 +39,22 @@ namespace OCPP.Core.Server
 
         public ChargePointStatus(ChargePoint chargePoint)
         {
-            Id = chargePoint.ChargePointId;
+            Id = chargePoint.Id;
+            ExtId = chargePoint.ChargePointId;
             Name = chargePoint.Name;
         }
 
         /// <summary>
-        /// ID of chargepoint
+        /// Internal ID of chargepoint
         /// </summary>
         [Newtonsoft.Json.JsonProperty("id")]
-        public string Id { get; set; }
+        public uint Id { get; set; }
 
+        /// <summary>
+        /// External ID of chargepoint
+        /// </summary>
+        [Newtonsoft.Json.JsonProperty("id")]
+        public string ExtId { get; set; }
         /// <summary>
         /// Name of chargepoint
         /// </summary>

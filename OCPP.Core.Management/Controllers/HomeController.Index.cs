@@ -19,18 +19,15 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
-using Microsoft.EntityFrameworkCore;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
@@ -39,15 +36,16 @@ namespace OCPP.Core.Management.Controllers
     public partial class HomeController : BaseController
     {
         private readonly IStringLocalizer<HomeController> _localizer;
-
+        private readonly OCPPCoreContext _dbContext;
         public HomeController(
             UserManager userManager,
             IStringLocalizer<HomeController> localizer,
             ILoggerFactory loggerFactory,
-            IConfiguration config) : base(userManager, loggerFactory, config)
+            IConfiguration config,OCPPCoreContext dbContext) : base(userManager, loggerFactory, config)
         {
             _localizer = localizer;
             Logger = loggerFactory.CreateLogger<HomeController>();
+            _dbContext = dbContext;
         }
 
         [Authorize]
@@ -138,7 +136,7 @@ namespace OCPP.Core.Management.Controllers
                 }
                 #endregion
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                using (var dbContext = _dbContext)
                 {
                     // List of charge point status (OCPP messages) with latest transaction (if one exist)
                     List<ConnectorStatusView> connectorStatusViewList = dbContext.ConnectorStatusViews.ToList<ConnectorStatusView>();
@@ -147,15 +145,15 @@ namespace OCPP.Core.Management.Controllers
                     Dictionary<string, int> dictConnectorCount = new Dictionary<string, int>();
                     foreach(ConnectorStatusView csv in connectorStatusViewList)
                     {
-                        if (dictConnectorCount.ContainsKey(csv.ChargePointId))
+                        if (dictConnectorCount.ContainsKey(csv.ChargePointId.ToString()))
                         {
                             // > 1 connector
-                            dictConnectorCount[csv.ChargePointId] = dictConnectorCount[csv.ChargePointId] + 1;
+                            dictConnectorCount[csv.ChargePointId.ToString()] = dictConnectorCount[csv.ChargePointId.ToString()] + 1;
                         }
                         else
                         {
                             // first connector
-                            dictConnectorCount.Add(csv.ChargePointId, 1);
+                            dictConnectorCount.Add(csv.ChargePointId.ToString(), 1);
                         }
                     }
 
@@ -168,7 +166,7 @@ namespace OCPP.Core.Management.Controllers
                         foreach(ChargePoint cp in dbChargePoints)
                         {
                             ChargePointStatus cpOnlineStatus = null;
-                            dictOnlineStatus.TryGetValue(cp.ChargePointId, out cpOnlineStatus);
+                            dictOnlineStatus.TryGetValue(cp.ChargePointId.ToString(), out cpOnlineStatus);
 
                             // Preference: Check for connectors status in database
                             bool foundConnectorStatus = false;
@@ -176,18 +174,18 @@ namespace OCPP.Core.Management.Controllers
                             {
                                 foreach (ConnectorStatusView connStatus in connectorStatusViewList)
                                 {
-                                    if (string.Equals(cp.ChargePointId, connStatus.ChargePointId, StringComparison.InvariantCultureIgnoreCase))
+                                    if (string.Equals(cp.ChargePointId.ToString(), connStatus.ChargePointId.ToString(), StringComparison.InvariantCultureIgnoreCase))
                                     {
                                         foundConnectorStatus = true;
 
                                         ChargePointsOverviewViewModel cpovm = new ChargePointsOverviewViewModel();
-                                        cpovm.ChargePointId = cp.ChargePointId;
+                                        cpovm.ChargePointId = cp.ChargePointId.ToString();
                                         cpovm.ConnectorId = connStatus.ConnectorId;
                                         if (string.IsNullOrWhiteSpace(connStatus.ConnectorName))
                                         {
                                             // No connector name specified => use default
-                                            if (dictConnectorCount.ContainsKey(cp.ChargePointId) &&
-                                                dictConnectorCount[cp.ChargePointId] > 1)
+                                            if (dictConnectorCount.ContainsKey(cp.ChargePointId.ToString()) &&
+                                                dictConnectorCount[cp.ChargePointId.ToString()] > 1)
                                             {
                                                 // more than 1 connector => "<charge point name>:<connector no.>"
                                                 cpovm.Name = $"{cp.Name}:{connStatus.ConnectorId}";
@@ -265,7 +263,7 @@ namespace OCPP.Core.Management.Controllers
                             {
                                 // no connector status found in DB => show configured charge point in overview
                                 ChargePointsOverviewViewModel cpovm = new ChargePointsOverviewViewModel();
-                                cpovm.ChargePointId = cp.ChargePointId;
+                                cpovm.ChargePointId = cp.ChargePointId.ToString();
                                 cpovm.ConnectorId = 0;
                                 cpovm.Name = cp.Name;
                                 cpovm.Comment = cp.Comment;

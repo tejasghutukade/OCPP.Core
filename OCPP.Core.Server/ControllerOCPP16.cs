@@ -18,9 +18,7 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
@@ -33,10 +31,11 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Constructor
         /// </summary>
-        public ControllerOCPP16(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus) :
-            base(config, loggerFactory, chargePointStatus)
+        
+        
+        public ControllerOCPP16(IConfiguration config, ILogger logger, ChargePointStatus? chargePointStatus, OCPPCoreContext dbContext) :
+            base(config, logger, chargePointStatus, dbContext)
         {
-            Logger = loggerFactory.CreateLogger(typeof(ControllerOCPP16));
         }
 
         /// <summary>
@@ -48,7 +47,7 @@ namespace OCPP.Core.Server
             msgOut.MessageType = "3";
             msgOut.UniqueId = msgIn.UniqueId;
 
-            string errorCode = null;
+            string? errorCode = null;
 
             switch (msgIn.Action)
             {
@@ -95,7 +94,7 @@ namespace OCPP.Core.Server
                 // Inavlid message type => return type "4" (CALLERROR)
                 msgOut.MessageType = "4";
                 msgOut.ErrorCode = errorCode;
-                Logger.LogDebug("ControllerOCPP16 => Return error code messge: ErrorCode={0}", errorCode);
+                Logger.LogDebug("ControllerOCPP16 => Return error code messge: ErrorCode={ErrorCode}", errorCode);
             }
 
             return msgOut;
@@ -125,14 +124,22 @@ namespace OCPP.Core.Server
         }
 
         /// <summary>
+        /// Fetch the Charging Station Messages and send the messages to the Charge Point
+        /// </summary>
+        public void FetchRequestForChargePoint()
+        {
+            
+        }
+
+        /// <summary>
         /// Helper function for writing a log entry in database
         /// </summary>
-        private bool WriteMessageLog(string chargePointId, int? connectorId, string message, string result, string errorCode)
+        private bool WriteMessageLog(uint chargePointId, int? connectorId, string message, string result, string? errorCode)
         {
             try
             {
                 int dbMessageLog = Configuration.GetValue<int>("DbMessageLog", 0);
-                if (dbMessageLog > 0 && !string.IsNullOrWhiteSpace(chargePointId))
+                if (dbMessageLog > 0 && chargePointId > 0)
                 {
                     bool doLog = (dbMessageLog > 1 ||
                                     (message != "BootNotification" &&
@@ -142,17 +149,17 @@ namespace OCPP.Core.Server
 
                     if (doLog)
                     {
-                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                        using (var dbContext = DbContext)
                         {
                             MessageLog msgLog = new MessageLog();
                             msgLog.ChargePointId = chargePointId;
                             msgLog.ConnectorId = connectorId;
                             msgLog.LogTime = DateTime.UtcNow;
                             msgLog.Message = message;
-                            msgLog.Result = result;
+                            msgLog.Result = result??string.Empty;
                             msgLog.ErrorCode = errorCode;
                             dbContext.MessageLogs.Add(msgLog);
-                            Logger.LogTrace("MessageLog => Writing entry '{0}'", message);
+                            Logger.LogTrace("MessageLog => Writing entry '{Message}'", message);
                             dbContext.SaveChanges();
                         }
                         return true;
@@ -161,7 +168,7 @@ namespace OCPP.Core.Server
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "MessageLog => Error writing entry '{0}'", message);
+                Logger.LogError(exp, "MessageLog => Error writing entry '{Message}'", message);
             }
             return false;
         }

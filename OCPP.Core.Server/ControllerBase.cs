@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
@@ -38,20 +39,26 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Chargepoint status
         /// </summary>
-        protected ChargePointStatus ChargePointStatus { get; set; }
+        protected ChargePointStatus? ChargePointStatus { get; set; }
 
         /// <summary>
         /// ILogger object
         /// </summary>
         protected ILogger Logger { get; set; }
+            
+        /// <summary>
+        /// DBContext object
+        /// </summary>
+        protected OCPPCoreContext DbContext { get; set; }
 
         /// <summary>
         /// Constructor
         /// </summary>
-        public ControllerBase(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus)
+        public ControllerBase(IConfiguration config, ILogger logger, ChargePointStatus? chargePointStatus,OCPPCoreContext dbContext)
         {
             Configuration = config;
-
+            DbContext = dbContext;
+            Logger = logger;
             if (chargePointStatus != null)
             {
                 ChargePointStatus = chargePointStatus;
@@ -70,16 +77,16 @@ namespace OCPP.Core.Server
         {
             try
             {
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                using (var dbContext = DbContext)
                 {
-                    ConnectorStatus connectorStatus = dbContext.Find<ConnectorStatus>(ChargePointStatus.Id, connectorId);
+                    ConnectorStatus? connectorStatus = dbContext.Find<ConnectorStatus>(ChargePointStatus?.Id, connectorId);
                     if (connectorStatus == null)
                     {
                         // no matching entry => create connector status
                         connectorStatus = new ConnectorStatus();
-                        connectorStatus.ChargePointId = ChargePointStatus.Id;
+                        connectorStatus.ChargePoint.Id = ChargePointStatus?.Id??0;
                         connectorStatus.ConnectorId = connectorId;
-                        Logger.LogTrace("UpdateConnectorStatus => Creating new DB-ConnectorStatus: ID={0} / Connector={1}", connectorStatus.ChargePointId, connectorStatus.ConnectorId);
+                        Logger.LogTrace("UpdateConnectorStatus => Creating new DB-ConnectorStatus: ID={ChargePointId} / Connector={ConnectorId}", connectorStatus.ChargePointId, connectorStatus.ConnectorId);
                         dbContext.Add<ConnectorStatus>(connectorStatus);
                     }
 
@@ -91,7 +98,7 @@ namespace OCPP.Core.Server
 
                     if (meter.HasValue)
                     {
-                        connectorStatus.LastMeter = meter.Value;
+                        connectorStatus.LastMeter = (float?) meter.Value;
                         connectorStatus.LastMeterTime = ((meterTime.HasValue) ? meterTime.Value : DateTimeOffset.UtcNow).DateTime;
                     }
                     dbContext.SaveChanges();
@@ -110,9 +117,9 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Clean charge tag Id from possible suffix ("..._abc")
         /// </summary>
-        protected static string CleanChargeTagId(string rawChargeTagId, ILogger logger)
+        protected static string? CleanChargeTagId(string? rawChargeTagId, ILogger logger)
         {
-            string idTag = rawChargeTagId;
+            string? idTag = rawChargeTagId;
 
             // KEBA adds the serial to the idTag ("<idTag>_<serial>") => cut off suffix
             if (!string.IsNullOrWhiteSpace(rawChargeTagId))

@@ -51,7 +51,7 @@ namespace OCPP.Core.Management.Controllers
                 ViewBag.Language = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
                 ctvm.CurrentTagId = Id;
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                using (var dbContext = _dbContext)
                 {
                     Logger.LogTrace("ChargeTag: Loading charge tags...");
                     List<ChargeTag> dbChargeTags = dbContext.ChargeTags.ToList<ChargeTag>();

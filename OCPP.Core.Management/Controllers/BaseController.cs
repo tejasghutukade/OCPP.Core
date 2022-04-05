@@ -21,7 +21,7 @@ using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-
+using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
 namespace OCPP.Core.Management.Controllers
@@ -37,7 +37,8 @@ namespace OCPP.Core.Management.Controllers
         public BaseController(
             UserManager userManager,
             ILoggerFactory loggerFactory,
-            IConfiguration config)
+            IConfiguration config
+            )
         {
             UserManager = userManager;
             Config = config;

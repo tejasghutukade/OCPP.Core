@@ -50,7 +50,7 @@ namespace OCPP.Core.Management.Controllers
                 ViewBag.DatePattern = CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern;
                 ViewBag.Language = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                using (var dbContext = _dbContext)
                 {
                     Logger.LogTrace("Connector: Loading connectors...");
                     List<ConnectorStatus> dbConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
@@ -61,7 +61,7 @@ namespace OCPP.Core.Management.Controllers
                     {
                         foreach (ConnectorStatus cs in dbConnectorStatuses)
                         {
-                            if (cs.ChargePointId.Equals(Id, StringComparison.InvariantCultureIgnoreCase) &&
+                            if (cs.ChargePointId.ToString().Equals(Id, StringComparison.InvariantCultureIgnoreCase) &&
                                 cs.ConnectorId.ToString().Equals(ConnectorId, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 currentConnectorStatus = cs;
@@ -73,7 +73,7 @@ namespace OCPP.Core.Management.Controllers
 
                     if (Request.Method == "POST")
                     {
-                        if (currentConnectorStatus.ChargePointId == Id)
+                        if (currentConnectorStatus.ChargePointId.ToString() == Id)
                         {
                             // Save connector
                             currentConnectorStatus.ConnectorName = csvm.ConnectorName;
@@ -91,7 +91,7 @@ namespace OCPP.Core.Management.Controllers
 
                         if (currentConnectorStatus != null)
                         {
-                            csvm.ChargePointId = currentConnectorStatus.ChargePointId;
+                            csvm.ChargePointId = currentConnectorStatus.ChargePointId.ToString();
                             csvm.ConnectorId = currentConnectorStatus.ConnectorId;
                             csvm.ConnectorName = currentConnectorStatus.ConnectorName;
                             csvm.LastStatus = currentConnectorStatus.LastStatus;

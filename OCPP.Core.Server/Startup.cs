@@ -17,23 +17,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
-using System.Net.WebSockets;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 using OCPP.Core.Database;
 
 namespace OCPP.Core.Server
@@ -44,18 +34,22 @@ namespace OCPP.Core.Server
         /// ILogger object
         /// </summary>
         private ILoggerFactory LoggerFactory { get; set; }
-
+        public IConfiguration Configuration { get; }
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
 
-        public IConfiguration Configuration { get; }
+        
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDbContext<OCPPCoreContext>(options =>
+                options.UseMySql(Configuration.GetConnectionString("MySql"),
+                    ServerVersion.Parse("8.0.28-mysql")),ServiceLifetime.Transient);
             services.AddControllers();
+            
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -77,6 +71,7 @@ namespace OCPP.Core.Server
             var webSocketOptions = new WebSocketOptions() 
             {
                 ReceiveBufferSize = 8 * 1024
+                
             };
 
             // Accept WebSocket
@@ -84,6 +79,9 @@ namespace OCPP.Core.Server
 
             // Integrate custom OCPP middleware for message processing
             app.UseOCPPMiddleware();
+
         }
+        
+       
     }
 }

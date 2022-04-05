@@ -1,4 +1,4 @@
-USE [OCPP.Core]
+USE [Core]
 GO
 /****** Object:  Table [dbo].[ChargePoint]    Script Date: 20.12.2020 22:54:30 ******/
 SET ANSI_NULLS ON
@@ -145,5 +145,5 @@ ALTER TABLE [dbo].[Transactions] CHECK CONSTRAINT [FK_Transactions_Transactions]
 GO
 USE [master]
 GO
-ALTER DATABASE [OCPP.Core] SET  READ_WRITE 
+ALTER DATABASE [Core] SET  READ_WRITE 
 GO

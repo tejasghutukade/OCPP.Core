@@ -21,7 +21,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
@@ -45,7 +44,7 @@ namespace OCPP.Core.Management.Controllers
 
                 cpvm.CurrentId = Id;
 
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                using (var dbContext = _dbContext)
                 {
                     Logger.LogTrace("ChargePoint: Loading charge points...");
                     List<ChargePoint> dbChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
@@ -56,7 +55,7 @@ namespace OCPP.Core.Management.Controllers
                     {
                         foreach (ChargePoint cp in dbChargePoints)
                         {
-                            if (cp.ChargePointId.Equals(Id, StringComparison.InvariantCultureIgnoreCase))
+                            if (cp.ChargePointId.ToString().Equals(Id, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 currentChargePoint = cp;
                                 Logger.LogTrace("ChargePoint: Current charge point: {0} / {1}", cp.ChargePointId, cp.Name);
@@ -85,7 +84,7 @@ namespace OCPP.Core.Management.Controllers
                                 // check if duplicate
                                 foreach (ChargePoint cp in dbChargePoints)
                                 {
-                                    if (cp.ChargePointId.Equals(cpvm.ChargePointId, StringComparison.InvariantCultureIgnoreCase))
+                                    if (cp.ChargePointId.ToString().Equals(cpvm.ChargePointId, StringComparison.InvariantCultureIgnoreCase))
                                     {
                                         // id already exists
                                         errorMsg = _localizer["ChargePointIdExists"].Value;
@@ -115,7 +114,7 @@ namespace OCPP.Core.Management.Controllers
                                 return View("ChargePointDetail", cpvm);
                             }
                         }
-                        else if (currentChargePoint.ChargePointId == Id)
+                        else if (currentChargePoint.ChargePointId.ToString() == Id)
                         {
                             // Save existing charge point
                             Logger.LogTrace("ChargePoint: Saving charge point '{0}'", Id);
@@ -141,7 +140,7 @@ namespace OCPP.Core.Management.Controllers
                         if (currentChargePoint!= null)
                         {
                             cpvm = new ChargePointViewModel();
-                            cpvm.ChargePointId = currentChargePoint.ChargePointId;
+                            cpvm.ChargePointId = currentChargePoint.ChargePointId.ToString();
                             cpvm.Name = currentChargePoint.Name;
                             cpvm.Comment = currentChargePoint.Comment;
                             cpvm.Username = currentChargePoint.Username;

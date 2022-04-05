@@ -1,10 +1,13 @@
-USE [OCPP.Core]
+USE [Core]
 GO
 
 /**** New with V1.1.0 ****/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
+GO
+IF EXISTS(SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ConnectorStatus' AND TABLE_SCHEMA = 'dbo')
+    DROP TABLE [dbo].[ConnectorStatus];
 GO
 CREATE TABLE [dbo].[ConnectorStatus](
 	[ChargePointId] [nvarchar](100) NOT NULL,
@@ -25,6 +28,9 @@ GO
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
+GO
+IF EXISTS(SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'ConnectorStatusView' AND TABLE_SCHEMA = 'dbo')
+    DROP VIEW [dbo].[ConnectorStatusView];
 GO
 CREATE VIEW [dbo].[ConnectorStatusView]
 AS

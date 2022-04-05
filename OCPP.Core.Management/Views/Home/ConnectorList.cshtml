@@ -23,7 +23,7 @@
         <tbody>
             @if (Model.ConnectorStatuses != null)
             {
-                foreach (ConnectorStatus cs in Model.ConnectorStatuses)
+                foreach (var cs in Model.ConnectorStatuses)
                 {
                     <tr class="table-row" data-href='@Url.Action("Connector", Constants.HomeController, new { id = cs.ChargePointId, connectorId = cs.ConnectorId.ToString() })'>
                         <td>@cs.ChargePointId</td>

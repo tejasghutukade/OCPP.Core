@@ -75,7 +75,7 @@ namespace OCPP.Core.Management.Controllers
                 }
 
                 string currentConnectorName = string.Empty;
-                using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                using (var dbContext = _dbContext)
                 {
                     Logger.LogTrace("Export: Loading charge points...");
                     tlvm.ConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
@@ -83,7 +83,7 @@ namespace OCPP.Core.Management.Controllers
                     // Preferred: use specific connector name
                     foreach (ConnectorStatus cs in tlvm.ConnectorStatuses)
                     {
-                        if (cs.ChargePointId == Id && cs.ConnectorId == currentConnectorId)
+                        if (cs.ChargePointId.ToString() == Id && cs.ConnectorId == currentConnectorId)
                         {
                             currentConnectorName = cs.ConnectorName;
                             /*
@@ -101,7 +101,7 @@ namespace OCPP.Core.Management.Controllers
                         tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
                         foreach(ChargePoint cp in tlvm.ChargePoints)
                         {
-                            if (cp.ChargePointId == Id)
+                            if (cp.ChargePointId.ToString() == Id)
                             {
                                 currentConnectorName = $"{cp.Name}:{currentConnectorId}";
                                 break;
@@ -130,7 +130,7 @@ namespace OCPP.Core.Management.Controllers
                     {
                         Logger.LogTrace("Export: Loading charge point transactions...");
                         tlvm.Transactions = dbContext.Transactions
-                                            .Where(t => t.ChargePointId == tlvm.CurrentChargePointId &&
+                                            .Where(t => t.ChargePointId.ToString() == tlvm.CurrentChargePointId &&
                                                         t.ConnectorId == tlvm.CurrentConnectorId &&
                                                         t.StartTime >= DateTime.UtcNow.AddDays(-1 * days))
                                             .OrderByDescending(t => t.TransactionId)

@@ -21,7 +21,7 @@
         <tbody>
             @if (Model.ChargeTags != null)
             {
-                foreach (ChargeTag tag in Model.ChargeTags)
+                foreach (var tag in Model.ChargeTags)
                 {
                     <tr class="table-row" data-href='@Url.Action("ChargeTag", Constants.HomeController, new { id = tag.TagId })'>
                         <td>@tag.TagId</td>

@@ -16,7 +16,7 @@
     {
         foreach (ChargePoint cp in Model.ChargePoints)
         {
-            chargePointNames.Add(cp.ChargePointId, cp.Name);
+            chargePointNames.Add(cp.ChargePointId.ToString(), cp.Name);
         }
     }
 
@@ -26,37 +26,37 @@
     string currentConnectorName = string.Empty;
     foreach (ConnectorStatus cs in Model.ConnectorStatuses)
     {
-        if (dictConnectorCount.ContainsKey(cs.ChargePointId))
+        if (dictConnectorCount.ContainsKey(cs.ChargePointId.ToString()))
         {
             // > 1 connector
-            dictConnectorCount[cs.ChargePointId] = dictConnectorCount[cs.ChargePointId] + 1;
+            dictConnectorCount[cs.ChargePointId.ToString()] = dictConnectorCount[cs.ChargePointId.ToString()] + 1;
         }
         else
         {
             // first connector
-            dictConnectorCount.Add(cs.ChargePointId, 1);
+            dictConnectorCount.Add(cs.ChargePointId.ToString(), 1);
         }
 
         ConnectorStatusViewModel csvm = new ConnectorStatusViewModel();
-        csvm.ChargePointId = cs.ChargePointId;
+        csvm.ChargePointId = cs.ChargePointId.ToString();
         csvm.ConnectorId = cs.ConnectorId;
 
         string connectorName = cs.ConnectorName;
         if (string.IsNullOrEmpty(connectorName))
         {
             // Default: use charge point name
-            chargePointNames.TryGetValue(cs.ChargePointId, out connectorName);
+            chargePointNames.TryGetValue(cs.ChargePointId.ToString(), out connectorName);
             if (string.IsNullOrEmpty(connectorName))
             {
                 // Fallback: use charge point ID
-                connectorName = cs.ChargePointId;
+                connectorName = cs.ChargePointId.ToString();
             }
             connectorName = $"{connectorName}:{cs.ConnectorId}";
         }
         csvm.ConnectorName = connectorName;
         connectorStatusViewModels.Add(csvm);
 
-        if (cs.ChargePointId == Model.CurrentChargePointId && cs.ConnectorId == Model.CurrentConnectorId)
+        if (cs.ChargePointId.ToString() == Model.CurrentChargePointId && cs.ConnectorId == Model.CurrentConnectorId)
         {
             currentConnectorName = connectorName;
         }

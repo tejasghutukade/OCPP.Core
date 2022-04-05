@@ -51,7 +51,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Error-Code
         /// </summary>
-        public string ErrorCode { get; set; }
+        public string? ErrorCode { get; set; }
 
         /// <summary>
         /// Error-Description

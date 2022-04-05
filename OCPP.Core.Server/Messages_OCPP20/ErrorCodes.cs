@@ -32,17 +32,17 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// <summary>
         /// Requested Action is recognized but not supported by the receiver
         /// </summary>
-        public static string NotSupported = "NotSupported";
+        public static string? NotSupported = "NotSupported";
 
         /// <summary>
         /// InternalError An internal error occurred and the receiver was not able to process the requested Action successfully
         /// </summary>
-        public static string InternalError = "InternalError";
+        public static string? InternalError = "InternalError";
 
         /// <summary>
         /// Payload for Action is incomplete
         /// </summary>
-        public static string ProtocolError = "ProtocolError";
+        public static string? ProtocolError = "ProtocolError";
 
         /// <summary>
         /// During the processing of Action a security issue occurred preventing receiver from completing the Action successfully
@@ -52,12 +52,12 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// <summary>
         /// Payload for Action is syntactically incorrect or not conform the PDU structure for Action
         /// </summary>
-        public static string FormationViolation = "FormationViolation";
+        public static string? FormationViolation = "FormationViolation";
 
         /// <summary>
         /// Payload is syntactically correct but at least one field contains an invalid value
         /// </summary>
-        public static string PropertyConstraintViolation = "PropertyConstraintViolation";
+        public static string? PropertyConstraintViolation = "PropertyConstraintViolation";
 
         /// <summary>
         /// Payload for Action is syntactically correct but at least one of the fields violates occurence constraints
@@ -72,6 +72,6 @@ namespace OCPP.Core.Server.Messages_OCPP20
         /// <summary>
         /// Any other error not covered by the previous ones
         /// </summary>
-        public static string GenericError = "GenericError";
+        public static string? GenericError = "GenericError";
     }
 }

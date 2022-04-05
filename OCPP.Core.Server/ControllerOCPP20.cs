@@ -18,8 +18,6 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
@@ -34,10 +32,10 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Constructor
         /// </summary>
-        public ControllerOCPP20(IConfiguration config, ILoggerFactory loggerFactory, ChargePointStatus chargePointStatus) :
-            base(config, loggerFactory, chargePointStatus)
+        public ControllerOCPP20(IConfiguration config, ILogger logger, ChargePointStatus? chargePointStatus,OCPPCoreContext dbContext) :
+            base(config, logger, chargePointStatus, dbContext)
         {
-            Logger = loggerFactory.CreateLogger(typeof(ControllerOCPP20));
+            Logger = logger;
         }
 
         /// <summary>
@@ -49,7 +47,7 @@ namespace OCPP.Core.Server
             msgOut.MessageType = "3";
             msgOut.UniqueId = msgIn.UniqueId;
 
-            string errorCode = null;
+            string? errorCode = null;
 
             if (msgIn.MessageType == "2")
             {
@@ -151,12 +149,12 @@ namespace OCPP.Core.Server
         /// <summary>
         /// Helper function for writing a log entry in database
         /// </summary>
-        private bool WriteMessageLog(string chargePointId, int? connectorId, string message, string result, string errorCode)
+        private bool WriteMessageLog(uint chargePointId, int? connectorId, string message, string result, string? errorCode)
         {
             try
             {
                 int dbMessageLog = Configuration.GetValue<int>("DbMessageLog", 0);
-                if (dbMessageLog > 0 && !string.IsNullOrWhiteSpace(chargePointId))
+                if (dbMessageLog > 0 && chargePointId > 0)
                 {
                     bool doLog = (dbMessageLog > 1 ||
                                     (message != "BootNotification" &&
@@ -166,10 +164,10 @@ namespace OCPP.Core.Server
 
                     if (doLog)
                     {
-                        using (OCPPCoreContext dbContext = new OCPPCoreContext(Configuration))
+                        using (var dbContext = DbContext)
                         {
                             MessageLog msgLog = new MessageLog();
-                            msgLog.ChargePointId = chargePointId;
+                            msgLog.ChargePointId = chargePointId ;
                             msgLog.ConnectorId = connectorId;
                             msgLog.LogTime = DateTime.UtcNow;
                             msgLog.Message = message;

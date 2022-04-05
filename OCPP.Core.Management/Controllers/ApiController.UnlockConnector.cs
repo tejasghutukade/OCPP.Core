@@ -31,6 +31,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 
+
 namespace OCPP.Core.Management.Controllers
 {
     public partial class ApiController : BaseController
@@ -53,7 +54,7 @@ namespace OCPP.Core.Management.Controllers
             {
                 try
                 {
-                    using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                    using (var dbContext = _dbContext)
                     {
                         ChargePoint chargePoint = dbContext.ChargePoints.Find(Id);
                         if (chargePoint != null)

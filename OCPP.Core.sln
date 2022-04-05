@@ -5,9 +5,11 @@ VisualStudioVersion = 16.0.30621.155
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Server", "OCPP.Core.Server\OCPP.Core.Server.csproj", "{BABF027C-B603-4B0C-9637-BBFB5051E0E1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Database", "OCPP.Core.Database\OCPP.Core.Database.csproj", "{AC9369B7-EC94-4EA0-87E7-B2EE8A2C1792}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.DatabaseOld", "OCPP.Core.DatabaseOld\OCPP.Core.DatabaseOld.csproj", "{AC9369B7-EC94-4EA0-87E7-B2EE8A2C1792}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Management", "OCPP.Core.Management\OCPP.Core.Management.csproj", "{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OCPP.Core.Database", "OCPP.Core.Database\OCPP.Core.Database.csproj", "{B4E6ABA6-C4FF-43AE-8C8C-7C2D592D6A51}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4E6ABA6-C4FF-43AE-8C8C-7C2D592D6A51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4E6ABA6-C4FF-43AE-8C8C-7C2D592D6A51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4E6ABA6-C4FF-43AE-8C8C-7C2D592D6A51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4E6ABA6-C4FF-43AE-8C8C-7C2D592D6A51}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

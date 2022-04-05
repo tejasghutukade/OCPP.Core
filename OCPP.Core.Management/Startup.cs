@@ -28,6 +28,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -60,6 +61,7 @@ namespace OCPP.Core.Management
                     });
 
             services.AddLocalization(opts => { opts.ResourcesPath = "Resources"; });
+            services.AddDbContext<OCPPCoreContext>(options => options.UseMySql(Configuration.GetConnectionString("MySql"), ServerVersion.Parse("8.0.28-mysql")));
             services.AddMvc()
                 .AddViewLocalization(
                     LanguageViewLocationExpanderFormat.Suffix,

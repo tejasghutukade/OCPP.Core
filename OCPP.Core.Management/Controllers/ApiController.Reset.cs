@@ -18,12 +18,10 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
@@ -33,45 +31,46 @@ using OCPP.Core.Database;
 
 namespace OCPP.Core.Management.Controllers
 {
-    public partial class ApiController : BaseController
+    public partial class ApiController
     {
         private readonly IStringLocalizer<ApiController> _localizer;
-
+        private readonly OCPPCoreContext _dbContext;
         public ApiController(
             UserManager userManager,
             IStringLocalizer<ApiController> localizer,
             ILoggerFactory loggerFactory,
-            IConfiguration config) : base(userManager, loggerFactory, config)
+            IConfiguration config,OCPPCoreContext dbContext) : base(userManager, loggerFactory, config)
         {
             _localizer = localizer;
             Logger = loggerFactory.CreateLogger<HomeController>();
+            _dbContext = dbContext;
         }
 
         [Authorize]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public async Task<IActionResult> Reset(string Id)
+        public async Task<IActionResult> Reset(string id)
         {
-            if (User != null && !User.IsInRole(Constants.AdminRoleName))
+            if (!User.IsInRole(Constants.AdminRoleName))
             {
-                Logger.LogWarning("Reset: Request by non-administrator: {0}", User?.Identity?.Name);
+                Logger.LogWarning("Reset: Request by non-administrator: {UserIdentity}", User.Identity?.Name);
                 return StatusCode((int)HttpStatusCode.Unauthorized);
             }
 
             int httpStatuscode = (int)HttpStatusCode.OK;
             string resultContent = string.Empty;
 
-            Logger.LogTrace("Reset: Request to restart chargepoint '{0}'", Id);
-            if (!string.IsNullOrEmpty(Id))
+            Logger.LogTrace("Reset: Request to restart chargepoint '{Id}'", id);
+            if (!string.IsNullOrEmpty(id))
             {
                 try
                 {
-                    using (OCPPCoreContext dbContext = new OCPPCoreContext(this.Config))
+                    using (var dbContext = _dbContext)
                     {
-                        ChargePoint chargePoint = dbContext.ChargePoints.Find(Id);
+                        ChargePoint? chargePoint = dbContext.ChargePoints.Find(id);
                         if (chargePoint != null)
                         {
-                            string serverApiUrl = base.Config.GetValue<string>("ServerApiUrl");
-                            string apiKeyConfig = base.Config.GetValue<string>("ApiKey");
+                            string serverApiUrl = Config.GetValue<string>("ServerApiUrl");
+                            string apiKeyConfig = Config.GetValue<string>("ApiKey");
                             if (!string.IsNullOrEmpty(serverApiUrl))
                             {
                                 try
@@ -82,8 +81,9 @@ namespace OCPP.Core.Management.Controllers
                                         {
                                             serverApiUrl += "/";
                                         }
+                                        
                                         Uri uri = new Uri(serverApiUrl);
-                                        uri = new Uri(uri, $"Reset/{Uri.EscapeUriString(Id)}");
+                                        uri = new Uri(uri, $"Reset/{id}");
                                         httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
 
                                         // API-Key authentication?
@@ -104,9 +104,9 @@ namespace OCPP.Core.Management.Controllers
                                             {
                                                 try
                                                 {
-                                                    dynamic jsonObject = JsonConvert.DeserializeObject(jsonResult);
-                                                    Logger.LogInformation("Reset: Result of API request is '{0}'", jsonResult);
-                                                    string status = jsonObject.status;
+                                                    dynamic? jsonObject = JsonConvert.DeserializeObject(jsonResult);
+                                                    Logger.LogInformation("Reset: Result of API request is '{JsonResult}'", jsonResult);
+                                                    string status = jsonObject?.status ?? string.Empty;
                                                     switch (status)
                                                     {
                                                         case "Accepted":
@@ -125,7 +125,7 @@ namespace OCPP.Core.Management.Controllers
                                                 }
                                                 catch (Exception exp)
                                                 {
-                                                    Logger.LogError(exp, "Reset: Error in JSON result => {0}", exp.Message);
+                                                    Logger.LogError(exp, "Reset: Error in JSON result => {ErrorMessage}", exp.Message);
                                                     httpStatuscode = (int)HttpStatusCode.OK;
                                                     resultContent = _localizer["ResetError"];
                                                 }
@@ -145,7 +145,7 @@ namespace OCPP.Core.Management.Controllers
                                         }
                                         else
                                         {
-                                            Logger.LogError("Reset: Result of API  request => httpStatus={0}", response.StatusCode);
+                                            Logger.LogError("Reset: Result of API  request => httpStatus={StatusCode}", response.StatusCode);
                                             httpStatuscode = (int)HttpStatusCode.OK;
                                             resultContent = _localizer["ResetError"];
                                         }
@@ -153,7 +153,7 @@ namespace OCPP.Core.Management.Controllers
                                 }
                                 catch (Exception exp)
                                 {
-                                    Logger.LogError(exp, "Reset: Error in API request => {0}", exp.Message);
+                                    Logger.LogError(exp, "Reset: Error in API request => {ErrorMessage}", exp.Message);
                                     httpStatuscode = (int)HttpStatusCode.OK;
                                     resultContent = _localizer["ResetError"];
                                 }
@@ -161,7 +161,7 @@ namespace OCPP.Core.Management.Controllers
                         }
                         else
                         {
-                            Logger.LogWarning("Reset: Error loading charge point '{0}' from database", Id);
+                            Logger.LogWarning("Reset: Error loading charge point '{Id}' from database", id);
                             httpStatuscode = (int)HttpStatusCode.OK;
                             resultContent = _localizer["UnknownChargepoint"];
                         }
