@@ -7,7 +7,11 @@ namespace OCPP.Core.Database
     {
         public ChargeTag()
         {
+            CpTagAccesses = new HashSet<CpTagAccess>();
             InverseParentTag = new HashSet<ChargeTag>();
+            SendRequests = new HashSet<SendRequest>();
+            TransactionStartTags = new HashSet<Transaction>();
+            TransactionStopTags = new HashSet<Transaction>();
         }
 
         public int Id { get; set; }
@@ -18,6 +22,10 @@ namespace OCPP.Core.Database
         public string TagStatus { get; set; } = null!;
 
         public virtual ChargeTag? ParentTag { get; set; }
+        public virtual ICollection<CpTagAccess> CpTagAccesses { get; set; }
         public virtual ICollection<ChargeTag> InverseParentTag { get; set; }
+        public virtual ICollection<SendRequest> SendRequests { get; set; }
+        public virtual ICollection<Transaction> TransactionStartTags { get; set; }
+        public virtual ICollection<Transaction> TransactionStopTags { get; set; }
     }
 }

@@ -22,7 +22,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
+using Serilog;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
@@ -31,34 +31,34 @@ namespace OCPP.Core.Management.Controllers
     public partial class HomeController : BaseController
     {
         [Authorize]
-        public IActionResult ChargePoint(string Id, ChargePointViewModel cpvm)
+        public IActionResult ChargePoint(string id, ChargePointViewModel cpvm)
         {
             try
             {
                 if (User != null && !User.IsInRole(Constants.AdminRoleName))
                 {
-                    Logger.LogWarning("ChargePoint: Request by non-administrator: {0}", User?.Identity?.Name);
+                    Logger.Warning("ChargePoint: Request by non-administrator: {0}", User?.Identity?.Name);
                     TempData["ErrMsgKey"] = "AccessDenied";
                     return RedirectToAction("Error", new { Id = "" });
                 }
 
-                cpvm.CurrentId = Id;
+                cpvm.CurrentId = id;
 
                 using (var dbContext = _dbContext)
                 {
-                    Logger.LogTrace("ChargePoint: Loading charge points...");
+                    Logger.Verbose("ChargePoint: Loading charge points...");
                     List<ChargePoint> dbChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
-                    Logger.LogInformation("ChargePoint: Found {0} charge points", dbChargePoints.Count);
+                    Logger.Information("ChargePoint: Found {0} charge points", dbChargePoints.Count);
 
                     ChargePoint currentChargePoint = null;
-                    if (!string.IsNullOrEmpty(Id))
+                    if (!string.IsNullOrEmpty(id))
                     {
                         foreach (ChargePoint cp in dbChargePoints)
                         {
-                            if (cp.ChargePointId.ToString().Equals(Id, StringComparison.InvariantCultureIgnoreCase))
+                            if (cp.ChargePointId.ToString().Equals(id, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 currentChargePoint = cp;
-                                Logger.LogTrace("ChargePoint: Current charge point: {0} / {1}", cp.ChargePointId, cp.Name);
+                                Logger.Verbose("ChargePoint: Current charge point: {0} / {1}", cp.ChargePointId, cp.Name);
                                 break;
                             }
                         }
@@ -68,15 +68,15 @@ namespace OCPP.Core.Management.Controllers
                     {
                         string errorMsg = null;
 
-                        if (Id == "@")
+                        if (id == "@")
                         {
-                            Logger.LogTrace("ChargePoint: Creating new charge point...");
+                            Logger.Verbose("ChargePoint: Creating new charge point...");
 
                             // Create new tag
                             if (string.IsNullOrWhiteSpace(cpvm.ChargePointId))
                             {
                                 errorMsg = _localizer["ChargePointIdRequired"].Value;
-                                Logger.LogInformation("ChargePoint: New => no charge point ID entered");
+                                Logger.Information("ChargePoint: New => no charge point ID entered");
                             }
 
                             if (string.IsNullOrEmpty(errorMsg))
@@ -88,7 +88,7 @@ namespace OCPP.Core.Management.Controllers
                                     {
                                         // id already exists
                                         errorMsg = _localizer["ChargePointIdExists"].Value;
-                                        Logger.LogInformation("ChargePoint: New => charge point ID already exists: {0}", cpvm.ChargePointId);
+                                        Logger.Information("ChargePoint: New => charge point ID already exists: {0}", cpvm.ChargePointId);
                                         break;
                                     }
                                 }
@@ -106,7 +106,7 @@ namespace OCPP.Core.Management.Controllers
                                 newChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
                                 dbContext.ChargePoints.Add(newChargePoint);
                                 dbContext.SaveChanges();
-                                Logger.LogInformation("ChargePoint: New => charge point saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
+                                Logger.Information("ChargePoint: New => charge point saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
                             }
                             else
                             {
@@ -114,10 +114,10 @@ namespace OCPP.Core.Management.Controllers
                                 return View("ChargePointDetail", cpvm);
                             }
                         }
-                        else if (currentChargePoint.ChargePointId.ToString() == Id)
+                        else if (currentChargePoint.ChargePointId.ToString() == id)
                         {
                             // Save existing charge point
-                            Logger.LogTrace("ChargePoint: Saving charge point '{0}'", Id);
+                            Logger.Verbose("ChargePoint: Saving charge point '{0}'", id);
                             currentChargePoint.Name = cpvm.Name;
                             currentChargePoint.Comment = cpvm.Comment;
                             currentChargePoint.Username = cpvm.Username;
@@ -125,7 +125,7 @@ namespace OCPP.Core.Management.Controllers
                             currentChargePoint.ClientCertThumb = cpvm.ClientCertThumb;
 
                             dbContext.SaveChanges();
-                            Logger.LogInformation("ChargePoint: Edit => charge point saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
+                            Logger.Information("ChargePoint: Edit => charge point saved: {0} / {1}", cpvm.ChargePointId, cpvm.Name);
                         }
 
                         return RedirectToAction("ChargePoint", new { Id = "" });
@@ -135,7 +135,7 @@ namespace OCPP.Core.Management.Controllers
                         // Display charge point
                         cpvm = new ChargePointViewModel();
                         cpvm.ChargePoints = dbChargePoints;
-                        cpvm.CurrentId = Id;
+                        cpvm.CurrentId = id;
 
                         if (currentChargePoint!= null)
                         {
@@ -148,14 +148,14 @@ namespace OCPP.Core.Management.Controllers
                             cpvm.ClientCertThumb = currentChargePoint.ClientCertThumb;
                         }
 
-                        string viewName = (!string.IsNullOrEmpty(cpvm.ChargePointId) || Id == "@") ? "ChargePointDetail" : "ChargePointList";
+                        string viewName = (!string.IsNullOrEmpty(cpvm.ChargePointId) || id == "@") ? "ChargePointDetail" : "ChargePointList";
                         return View(viewName, cpvm);
                     }
                 }
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "ChargePoint: Error loading charge points from database");
+                Logger.Error(exp, "ChargePoint: Error loading charge points from database");
                 TempData["ErrMessage"] = exp.Message;
                 return RedirectToAction("Error", new { Id = "" });
             }

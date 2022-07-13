@@ -18,145 +18,137 @@
  */
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
 namespace OCPP.Core.Management.Controllers
 {
-    public partial class HomeController : BaseController
+    public partial class HomeController
     {
         [Authorize]
-        public IActionResult ChargeTag(string Id, ChargeTagViewModel ctvm)
+        public IActionResult ChargeTag(string id, ChargeTagViewModel chargeTagViewModel)
         {
             try
             {
-                if (User != null && !User.IsInRole(Constants.AdminRoleName))
+                if (!User.IsInRole(Constants.AdminRoleName))
                 {
-                    Logger.LogWarning("ChargeTag: Request by non-administrator: {0}", User?.Identity?.Name);
+                    Logger.Warning("ChargeTag: Request by non-administrator: {Name}", User.Identity?.Name);
                     TempData["ErrMsgKey"] = "AccessDenied";
                     return RedirectToAction("Error", new { Id = "" });
                 }
 
                 ViewBag.DatePattern = CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern;
                 ViewBag.Language = CultureInfo.CurrentCulture.TwoLetterISOLanguageName;
-                ctvm.CurrentTagId = Id;
+                chargeTagViewModel.CurrentTagId = id;
 
-                using (var dbContext = _dbContext)
+                using var dbContext = _dbContext;
+                Logger.Verbose("ChargeTag: Loading charge tags...");
+                var dbChargeTags = dbContext.ChargeTags.ToList();
+                Logger.Information("ChargeTag: Found {Count} charge tags", dbChargeTags.Count);
+
+                ChargeTag? currentChargeTag = null;
+                if (!string.IsNullOrEmpty(id))
                 {
-                    Logger.LogTrace("ChargeTag: Loading charge tags...");
-                    List<ChargeTag> dbChargeTags = dbContext.ChargeTags.ToList<ChargeTag>();
-                    Logger.LogInformation("ChargeTag: Found {0} charge tags", dbChargeTags.Count);
-
-                    ChargeTag currentChargeTag = null;
-                    if (!string.IsNullOrEmpty(Id))
+                    foreach (ChargeTag tag in dbChargeTags)
                     {
-                        foreach (ChargeTag tag in dbChargeTags)
+                        if (tag.TagId.Equals(id, StringComparison.InvariantCultureIgnoreCase))
                         {
-                            if (tag.TagId.Equals(Id, StringComparison.InvariantCultureIgnoreCase))
-                            {
-                                currentChargeTag = tag;
-                                Logger.LogTrace("ChargeTag: Current charge tag: {0} / {1}", tag.TagId, tag.TagName);
-                                break;
-                            }
+                            currentChargeTag = tag;
+                            Logger.Verbose("ChargeTag: Current charge tag: {TagId} / {TagName}", tag.TagId, tag.TagName);
+                            break;
                         }
                     }
+                }
 
-                    if (Request.Method == "POST")
+                if (Request.Method == "POST")
+                {
+                    string? errorMsg = null;
+
+                    if (id == "@")
                     {
-                        string errorMsg = null;
+                        Logger.Verbose("ChargeTag: Creating new charge tag...");
 
-                        if (Id == "@")
+                        // Create new tag
+                        if (string.IsNullOrWhiteSpace(chargeTagViewModel.TagId))
                         {
-                            Logger.LogTrace("ChargeTag: Creating new charge tag...");
+                            errorMsg = _localizer["ChargeTagIdRequired"].Value;
+                            Logger.Information("ChargeTag: New => no charge tag ID entered");
+                        }
 
-                            // Create new tag
-                            if (string.IsNullOrWhiteSpace(ctvm.TagId))
+                        if (string.IsNullOrEmpty(errorMsg))
+                        {
+                            // check if duplicate
+                            if (dbChargeTags.Any(tag => tag.TagId.Equals(chargeTagViewModel.TagId, StringComparison.InvariantCultureIgnoreCase)))
                             {
-                                errorMsg = _localizer["ChargeTagIdRequired"].Value;
-                                Logger.LogInformation("ChargeTag: New => no charge tag ID entered");
-                            }
-
-                            if (string.IsNullOrEmpty(errorMsg))
-                            {
-                                // check if duplicate
-                                foreach (ChargeTag tag in dbChargeTags)
-                                {
-                                    if (tag.TagId.Equals(ctvm.TagId, StringComparison.InvariantCultureIgnoreCase))
-                                    {
-                                        // tag-id already exists
-                                        errorMsg = _localizer["ChargeTagIdExists"].Value;
-                                        Logger.LogInformation("ChargeTag: New => charge tag ID already exists: {0}", ctvm.TagId);
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (string.IsNullOrEmpty(errorMsg))
-                            {
-                                // Save tag in DB
-                                ChargeTag newTag = new ChargeTag();
-                                newTag.TagId = ctvm.TagId;
-                                newTag.TagName = ctvm.TagName;
-                                newTag.ParentTagId = ctvm.ParentTagId;
-                                newTag.ExpiryDate = ctvm.ExpiryDate;
-                                newTag.Blocked = ctvm.Blocked;
-                                dbContext.ChargeTags.Add(newTag);
-                                dbContext.SaveChanges();
-                                Logger.LogInformation("ChargeTag: New => charge tag saved: {0} / {1}", ctvm.TagId, ctvm.TagName);
-                            }
-                            else
-                            {
-                                ViewBag.ErrorMsg = errorMsg;
-                                return View("ChargeTagDetail", ctvm);
+                                errorMsg = _localizer["ChargeTagIdExists"].Value;
+                                Logger.Information("ChargeTag: New => charge tag ID already exists: {TagId}", chargeTagViewModel.TagId);
                             }
                         }
-                        else if (currentChargeTag.TagId == Id)
+
+                        if (string.IsNullOrEmpty(errorMsg))
                         {
-                            // Save existing tag
-                            currentChargeTag.TagName = ctvm.TagName;
-                            currentChargeTag.ParentTagId = ctvm.ParentTagId;
-                            currentChargeTag.ExpiryDate = ctvm.ExpiryDate;
-                            currentChargeTag.Blocked = ctvm.Blocked;
+                            // Save tag in DB
+                            var newTag = new ChargeTag
+                            {
+                                TagId = chargeTagViewModel.TagId,
+                                TagName = chargeTagViewModel.TagName,
+                                //newTag.ParentTagId = chargeTagViewModel.ParentTagId;
+                                ExpiryDate = chargeTagViewModel.ExpiryDate,
+                                TagStatus = chargeTagViewModel.Blocked?nameof(ChargeTagStatus.Blocked):nameof(ChargeTagStatus.Accepted)
+                            };
+                            dbContext.ChargeTags.Add(newTag);
                             dbContext.SaveChanges();
-                            Logger.LogInformation("ChargeTag: Edit => charge tag saved: {0} / {1}", ctvm.TagId, ctvm.TagName);
+                            Logger.Information("ChargeTag: New => charge tag saved: {TagId} / {TagName}", chargeTagViewModel.TagId, chargeTagViewModel.TagName);
                         }
-
-                        return RedirectToAction("ChargeTag", new { Id = "" });
-                    }
-                    else
-                    {
-                        // List all charge tags
-                        ctvm = new ChargeTagViewModel();
-                        ctvm.ChargeTags = dbChargeTags;
-                        ctvm.CurrentTagId = Id;
-
-                        if (currentChargeTag != null)
+                        else
                         {
-                            ctvm.TagId = currentChargeTag.TagId;
-                            ctvm.TagName = currentChargeTag.TagName;
-                            ctvm.ParentTagId = currentChargeTag.ParentTagId;
-                            ctvm.ExpiryDate = currentChargeTag.ExpiryDate;
-                            ctvm.Blocked = (currentChargeTag.Blocked != null) && currentChargeTag.Blocked.Value;
+                            ViewBag.ErrorMsg = errorMsg;
+                            return View("ChargeTagDetail", chargeTagViewModel);
                         }
-
-                        string viewName = (!string.IsNullOrEmpty(ctvm.TagId) || Id=="@") ? "ChargeTagDetail" : "ChargeTagList";
-                        return View(viewName, ctvm);
                     }
+                    else if (currentChargeTag?.TagId == id)
+                    {
+                        // Save existing tag
+                        currentChargeTag.TagName = chargeTagViewModel.TagName;
+                        //currentChargeTag.ParentTagId = chargeTagViewModel.ParentTagId;
+                        currentChargeTag.ExpiryDate = chargeTagViewModel.ExpiryDate;
+                        currentChargeTag.TagStatus = chargeTagViewModel.Blocked?nameof(ChargeTagStatus.Blocked):nameof(ChargeTagStatus.Accepted);
+                        dbContext.SaveChanges();
+                        Logger.Information("ChargeTag: Edit => charge tag saved: {TagId} / {TagName}", chargeTagViewModel.TagId, chargeTagViewModel.TagName);
+                    }
+
+                    return RedirectToAction("ChargeTag", new { Id = "" });
+                }
+                else
+                {
+                    // List all charge tags
+                    chargeTagViewModel = new ChargeTagViewModel
+                    {
+                        ChargeTags = dbChargeTags,
+                        CurrentTagId = id
+                    };
+
+                    if (currentChargeTag != null)
+                    {
+                        chargeTagViewModel.TagId = currentChargeTag.TagId;
+                        chargeTagViewModel.TagName = currentChargeTag.TagName;
+                        // chargeTagViewModel.ParentTagId = currentChargeTag.ParentTagId;
+                        chargeTagViewModel.ExpiryDate = currentChargeTag.ExpiryDate;
+                        chargeTagViewModel.Blocked = (currentChargeTag.TagStatus != nameof(ChargeTagStatus.Blocked));
+                    }
+
+                    var viewName = (!string.IsNullOrEmpty(chargeTagViewModel.TagId) || id=="@") ? "ChargeTagDetail" : "ChargeTagList";
+                    
+                    return View(viewName, chargeTagViewModel);
                 }
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "ChargeTag: Error loading charge tags from database");
+                Logger.Error(exp, "ChargeTag: Error loading charge tags from database");
                 TempData["ErrMessage"] = exp.Message;
                 return RedirectToAction("Error", new { Id = "" });
             }

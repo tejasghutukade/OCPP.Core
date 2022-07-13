@@ -21,7 +21,7 @@ using System;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace OCPP.Core.Server
 {
@@ -41,16 +41,15 @@ namespace OCPP.Core.Server
                 //     IModel model = dbContext.Model;
                 // }
 
-                Host.CreateDefaultBuilder(args).ConfigureWebHostDefaults(webBuilder =>
+                Host.CreateDefaultBuilder(args).UseSerilog((ctx, lc) =>
                     {
-                        webBuilder
-                            .ConfigureLogging((ctx, builder) =>
-                            {
-                                builder.AddConfiguration(ctx.Configuration.GetSection("Logging"));
-                                builder.AddFile(o => o.RootPath = ctx.HostingEnvironment.ContentRootPath);
-                            })
-                            .UseStartup<Startup>();
-                    }).Build().Run();
+                        ctx.HostingEnvironment.ApplicationName = "OCPP.Core.Server";
+                        lc.ReadFrom.Configuration(config);
+                    }
+                ).ConfigureWebHostDefaults(webBuilder =>
+                {
+                    webBuilder.UseStartup<Startup>();
+                }).Build().Run();
             }
             catch (Exception e)
             {

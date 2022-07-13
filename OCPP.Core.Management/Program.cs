@@ -17,13 +17,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.IO;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace OCPP.Core.Management
 {
@@ -31,22 +29,19 @@ namespace OCPP.Core.Management
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
-        }
-
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
+            IConfiguration config = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: false)
+                .Build();
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
-                    webBuilder
-                        .ConfigureLogging((ctx, builder) =>
-                        {
-                            builder.AddConfiguration(ctx.Configuration.GetSection("Logging"));
-                            //builder.AddEventLog(o => o.LogName = "OCPP.Core");
-                            builder.AddFile(o => o.RootPath = ctx.HostingEnvironment.ContentRootPath);
-                        })
-                        .UseStartup<Startup>();
-                });
+                    webBuilder.UseStartup<Startup>();
+                }).UseSerilog((ctx, lc) =>
+                {
+                    ctx.HostingEnvironment.ApplicationName = "OCPP.Core.Library";
+                    lc.ReadFrom.Configuration(config);
+                }).Build().Run();
+        }
 
     }
 }

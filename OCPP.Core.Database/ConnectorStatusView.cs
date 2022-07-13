@@ -13,11 +13,11 @@ namespace OCPP.Core.Database
         public float? LastMeter { get; set; }
         public DateTime? LastMeterTime { get; set; }
         public int? TransactionId { get; set; }
-        public string? StartTagId { get; set; }
+        public int? StartTagId { get; set; }
         public DateTime? StartTime { get; set; }
         public float? MeterStart { get; set; }
         public string? StartResult { get; set; }
-        public string? StopTagId { get; set; }
+        public int? StopTagId { get; set; }
         public DateTime? StopTime { get; set; }
         public float? MeterStop { get; set; }
         public string? StopReason { get; set; }

@@ -71,12 +71,12 @@ namespace OCPP.Core.Management.Models
         /// <summary>
         /// Current charge rate in kW
         /// </summary>
-        public double? ChargeRateKW { get; set; }
+        public double? ChargeRateKw { get; set; }
 
         /// <summary>
         /// Current meter value in kWh
         /// </summary>
-        public double? MeterKWH { get; set; }
+        public double? MeterKwh { get; set; }
 
         /// <summary>
         /// StateOfCharges in percent

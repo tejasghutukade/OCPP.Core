@@ -16,23 +16,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
 
 namespace OCPP.Core.Management
@@ -61,7 +52,7 @@ namespace OCPP.Core.Management
                     });
 
             services.AddLocalization(opts => { opts.ResourcesPath = "Resources"; });
-            services.AddDbContext<OCPPCoreContext>(options => options.UseMySql(Configuration.GetConnectionString("MySql"), ServerVersion.Parse("8.0.28-mysql")));
+            services.AddDbContext<OcppCoreContext>(options => options.UseMySql(Configuration.GetConnectionString("MySql"), ServerVersion.Parse("8.0.28-mysql")));
             services.AddMvc()
                 .AddViewLocalization(
                     LanguageViewLocationExpanderFormat.Suffix,

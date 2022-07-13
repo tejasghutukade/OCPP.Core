@@ -17,7 +17,6 @@ namespace OCPP.Core.Database
         public DateTime ValidTo { get; set; }
         public string ChargingSchedule { get; set; } = null!;
         public string? Status { get; set; }
-
         public virtual ChargePoint ChargePoint { get; set; } = null!;
     }
 }

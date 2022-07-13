@@ -141,15 +141,15 @@
             {
                 foreach (Transaction t in Model.Transactions)
                 {
-                    string startTag = t.StartTagId;
-                    string stopTag = t.StopTagId;
-                    if (!string.IsNullOrEmpty(t.StartTagId) && Model.ChargeTags != null && Model.ChargeTags.ContainsKey(t.StartTagId))
+                    string startTag = t.StartTagId.ToString();
+                    string stopTag = t.StopTagId.ToString();
+                    if (!string.IsNullOrEmpty(t.StartTagId.ToString()) && Model.ChargeTags != null && Model.ChargeTags.ContainsKey(t.StartTagId.ToString()))
                     {
-                        startTag = Model.ChargeTags[t.StartTagId]?.TagName;
+                        startTag = Model.ChargeTags[t.StartTagId.ToString()]?.TagName;
                     }
-                    if (!string.IsNullOrEmpty(t.StopTagId) && Model.ChargeTags != null && Model.ChargeTags.ContainsKey(t.StopTagId))
+                    if (!string.IsNullOrEmpty(t.StopTagId.ToString()) && Model.ChargeTags != null && Model.ChargeTags.ContainsKey(t.StopTagId.ToString()))
                     {
-                        stopTag = Model.ChargeTags[t.StopTagId]?.TagName;
+                        stopTag = Model.ChargeTags[t.StopTagId.ToString()]?.TagName;
                     }
                     <tr>
                         <td>@currentConnectorName</td>

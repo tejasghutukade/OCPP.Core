@@ -9,6 +9,8 @@ namespace OCPP.Core.Database
         {
             ChargingProfiles = new HashSet<ChargingProfile>();
             ConnectorStatuses = new HashSet<ConnectorStatus>();
+            CpTagAccesses = new HashSet<CpTagAccess>();
+            SendRequests = new HashSet<SendRequest>();
             Transactions = new HashSet<Transaction>();
         }
 
@@ -34,6 +36,8 @@ namespace OCPP.Core.Database
 
         public virtual ICollection<ChargingProfile> ChargingProfiles { get; set; }
         public virtual ICollection<ConnectorStatus> ConnectorStatuses { get; set; }
+        public virtual ICollection<CpTagAccess> CpTagAccesses { get; set; }
+        public virtual ICollection<SendRequest> SendRequests { get; set; }
         public virtual ICollection<Transaction> Transactions { get; set; }
     }
 }

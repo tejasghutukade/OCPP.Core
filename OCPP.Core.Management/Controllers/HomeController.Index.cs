@@ -26,7 +26,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Logging;
+using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
@@ -36,22 +36,22 @@ namespace OCPP.Core.Management.Controllers
     public partial class HomeController : BaseController
     {
         private readonly IStringLocalizer<HomeController> _localizer;
-        private readonly OCPPCoreContext _dbContext;
+        private readonly OcppCoreContext _dbContext;
         public HomeController(
             UserManager userManager,
             IStringLocalizer<HomeController> localizer,
-            ILoggerFactory loggerFactory,
-            IConfiguration config,OCPPCoreContext dbContext) : base(userManager, loggerFactory, config)
+            ILogger loggerFactory,
+            IConfiguration config,OcppCoreContext dbContext) : base(userManager, loggerFactory, config)
         {
             _localizer = localizer;
-            Logger = loggerFactory.CreateLogger<HomeController>();
+            Logger = loggerFactory;
             _dbContext = dbContext;
         }
 
         [Authorize]
         public async Task<IActionResult> Index()
         {
-            Logger.LogTrace("Index: Loading charge points with latest transactions...");
+            Logger.Verbose("Index: Loading charge points with latest transactions...");
 
             OverviewViewModel overviewModel = new OverviewViewModel();
             overviewModel.ChargePoints = new List<ChargePointsOverviewViewModel>();
@@ -85,7 +85,7 @@ namespace OCPP.Core.Management.Controllers
                             }
                             else
                             {
-                                Logger.LogWarning("Index: No API-Key configured!");
+                                Logger.Warning("Index: No API-Key configured!");
                             }
 
                             HttpResponseMessage response = await httpClient.GetAsync(uri);
@@ -103,29 +103,29 @@ namespace OCPP.Core.Management.Controllers
                                         {
                                             if (!dictOnlineStatus.TryAdd(cps.Id, cps))
                                             {
-                                                Logger.LogError("Index: Online charge point status (ID={0}) could not be added to dictionary", cps.Id);
+                                                Logger.Error("Index: Online charge point status (ID={0}) could not be added to dictionary", cps.Id);
                                             }
                                         }
                                     }
                                 }
                                 else
                                 {
-                                    Logger.LogError("Index: Result of status web request is empty");
+                                    Logger.Error("Index: Result of status web request is empty");
                                     serverError = true;
                                 }
                             }
                             else
                             {
-                                Logger.LogError("Index: Result of status web request => httpStatus={0}", response.StatusCode);
+                                Logger.Error("Index: Result of status web request => httpStatus={0}", response.StatusCode);
                                 serverError = true;
                             }
                         }
 
-                        Logger.LogInformation("Index: Result of status web request => Length={0}", onlineStatusList?.Length);
+                        Logger.Information("Index: Result of status web request => Length={0}", onlineStatusList?.Length);
                     }
                     catch (Exception exp)
                     {
-                        Logger.LogError(exp, "Index: Error in status web request => {0}", exp.Message);
+                        Logger.Error(exp, "Index: Error in status web request => {0}", exp.Message);
                         serverError = true;
                     }
 
@@ -210,7 +210,7 @@ namespace OCPP.Core.Management.Controllers
                                         {
                                             onlineConnectorStatus = cpOnlineStatus.OnlineConnectors[connStatus.ConnectorId];
                                             cpovm.ConnectorStatus = onlineConnectorStatus.Status;
-                                            Logger.LogTrace("Index: Found online status for CP='{0}' / Connector='{1}' / Status='{2}'", cpovm.ChargePointId, cpovm.ConnectorId, cpovm.ConnectorStatus);
+                                            Logger.Verbose("Index: Found online status for CP='{0}' / Connector='{1}' / Status='{2}'", cpovm.ChargePointId, cpovm.ConnectorId, cpovm.ConnectorStatus);
                                         }
 
                                         if (connStatus.TransactionId.HasValue)
@@ -239,9 +239,9 @@ namespace OCPP.Core.Management.Controllers
                                             onlineConnectorStatus != null)
                                         {
                                             string currentCharge = string.Empty;
-                                            if (onlineConnectorStatus.ChargeRateKW != null)
+                                            if (onlineConnectorStatus.ChargeRateKw != null)
                                             {
-                                                currentCharge = string.Format("{0:0.0}kW", onlineConnectorStatus.ChargeRateKW.Value);
+                                                currentCharge = string.Format("{0:0.0}kW", onlineConnectorStatus.ChargeRateKw.Value);
                                             }
                                             if (onlineConnectorStatus.SoC != null)
                                             {
@@ -274,12 +274,12 @@ namespace OCPP.Core.Management.Controllers
                         }
                     }
 
-                    Logger.LogInformation("Index: Found {0} charge points / connectors", overviewModel.ChargePoints?.Count);
+                    Logger.Information("Index: Found {0} charge points / connectors", overviewModel.ChargePoints?.Count);
                 }
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "Index: Error loading charge points from database");
+                Logger.Error(exp, "Index: Error loading charge points from database");
                 TempData["ErrMessage"] = exp.Message;
                 return RedirectToAction("Error", new { Id = "" });
             }

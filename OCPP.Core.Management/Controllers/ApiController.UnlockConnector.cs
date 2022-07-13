@@ -18,16 +18,12 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 
@@ -38,25 +34,25 @@ namespace OCPP.Core.Management.Controllers
     {
         [Authorize]
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public async Task<IActionResult> UnlockConnector(string Id)
+        public async Task<IActionResult> UnlockConnector(string id)
         {
             if (User != null && !User.IsInRole(Constants.AdminRoleName))
             {
-                Logger.LogWarning("UnlockConnector: Request by non-administrator: {0}", User?.Identity?.Name);
+                Logger.Warning("UnlockConnector: Request by non-administrator: {0}", User?.Identity?.Name);
                 return StatusCode((int)HttpStatusCode.Unauthorized);
             }
 
             int httpStatuscode = (int)HttpStatusCode.OK;
             string resultContent = string.Empty;
 
-            Logger.LogTrace("UnlockConnector: Request to unlock chargepoint '{0}'", Id);
-            if (!string.IsNullOrEmpty(Id))
+            Logger.Verbose("UnlockConnector: Request to unlock chargepoint '{0}'", id);
+            if (!string.IsNullOrEmpty(id))
             {
                 try
                 {
                     using (var dbContext = _dbContext)
                     {
-                        ChargePoint chargePoint = dbContext.ChargePoints.Find(Id);
+                        ChargePoint chargePoint = dbContext.ChargePoints.Find(id);
                         if (chargePoint != null)
                         {
                             string serverApiUrl = base.Config.GetValue<string>("ServerApiUrl");
@@ -72,7 +68,7 @@ namespace OCPP.Core.Management.Controllers
                                             serverApiUrl += "/";
                                         }
                                         Uri uri = new Uri(serverApiUrl);
-                                        uri = new Uri(uri, $"UnlockConnector/{Uri.EscapeUriString(Id)}");
+                                        uri = new Uri(uri, $"UnlockConnector/{Uri.EscapeUriString(id)}");
                                         httpClient.Timeout = new TimeSpan(0, 0, 4); // use short timeout
 
                                         // API-Key authentication?
@@ -82,7 +78,7 @@ namespace OCPP.Core.Management.Controllers
                                         }
                                         else
                                         {
-                                            Logger.LogWarning("UnlockConnector: No API-Key configured!");
+                                            Logger.Warning("UnlockConnector: No API-Key configured!");
                                         }
 
                                         HttpResponseMessage response = await httpClient.GetAsync(uri);
@@ -94,7 +90,7 @@ namespace OCPP.Core.Management.Controllers
                                                 try
                                                 {
                                                     dynamic jsonObject = JsonConvert.DeserializeObject(jsonResult);
-                                                    Logger.LogInformation("UnlockConnector: Result of API request is '{0}'", jsonResult);
+                                                    Logger.Information("UnlockConnector: Result of API request is '{0}'", jsonResult);
                                                     string status = jsonObject.status;
                                                     switch (status)
                                                     {
@@ -116,14 +112,14 @@ namespace OCPP.Core.Management.Controllers
                                                 }
                                                 catch (Exception exp)
                                                 {
-                                                    Logger.LogError(exp, "UnlockConnector: Error in JSON result => {0}", exp.Message);
+                                                    Logger.Error(exp, "UnlockConnector: Error in JSON result => {0}", exp.Message);
                                                     httpStatuscode = (int)HttpStatusCode.OK;
                                                     resultContent = _localizer["UnlockConnectorError"];
                                                 }
                                             }
                                             else
                                             {
-                                                Logger.LogError("UnlockConnector: Result of API request is empty");
+                                                Logger.Error("UnlockConnector: Result of API request is empty");
                                                 httpStatuscode = (int)HttpStatusCode.OK;
                                                 resultContent = _localizer["UnlockConnectorError"];
                                             }
@@ -136,7 +132,7 @@ namespace OCPP.Core.Management.Controllers
                                         }
                                         else
                                         {
-                                            Logger.LogError("UnlockConnector: Result of API  request => httpStatus={0}", response.StatusCode);
+                                            Logger.Error("UnlockConnector: Result of API  request => httpStatus={0}", response.StatusCode);
                                             httpStatuscode = (int)HttpStatusCode.OK;
                                             resultContent = _localizer["UnlockConnectorError"];
                                         }
@@ -144,7 +140,7 @@ namespace OCPP.Core.Management.Controllers
                                 }
                                 catch (Exception exp)
                                 {
-                                    Logger.LogError(exp, "UnlockConnector: Error in API request => {0}", exp.Message);
+                                    Logger.Error(exp, "UnlockConnector: Error in API request => {0}", exp.Message);
                                     httpStatuscode = (int)HttpStatusCode.OK;
                                     resultContent = _localizer["UnlockConnectorError"];
                                 }
@@ -152,7 +148,7 @@ namespace OCPP.Core.Management.Controllers
                         }
                         else
                         {
-                            Logger.LogWarning("UnlockConnector: Error loading charge point '{0}' from database", Id);
+                            Logger.Warning("UnlockConnector: Error loading charge point '{0}' from database", id);
                             httpStatuscode = (int)HttpStatusCode.OK;
                             resultContent = _localizer["UnknownChargepoint"];
                         }
@@ -160,7 +156,7 @@ namespace OCPP.Core.Management.Controllers
                 }
                 catch (Exception exp)
                 {
-                    Logger.LogError(exp, "UnlockConnector: Error loading charge point from database");
+                    Logger.Error(exp, "UnlockConnector: Error loading charge point from database");
                     httpStatuscode = (int)HttpStatusCode.OK;
                     resultContent = _localizer["UnlockConnectorError"];
                 }

@@ -20,7 +20,7 @@
 using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Serilog;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
@@ -36,7 +36,7 @@ namespace OCPP.Core.Management.Controllers
 
         public BaseController(
             UserManager userManager,
-            ILoggerFactory loggerFactory,
+            ILogger loggerFactory,
             IConfiguration config
             )
         {

@@ -3,36 +3,38 @@ using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace OCPP.Core.Database
 {
-    public partial class OCPPCoreContext : DbContext
+    public partial class OcppCoreContext : DbContext
     {
-        private IConfiguration _configuration;
-        private ILogger _logger;
-        public OCPPCoreContext(DbContextOptions<OCPPCoreContext> options , ILoggerFactory loggerFactory, IConfiguration config)
-            : base(options)
-        {
-            _configuration = config;
-            _logger = loggerFactory.CreateLogger<OCPPCoreContext>();
-        }
+        
 
         public virtual DbSet<ChargePoint> ChargePoints { get; set; } = null!;
         public virtual DbSet<ChargeTag> ChargeTags { get; set; } = null!;
         public virtual DbSet<ChargingProfile> ChargingProfiles { get; set; } = null!;
         public virtual DbSet<ConnectorStatus> ConnectorStatuses { get; set; } = null!;
         public virtual DbSet<ConnectorStatusView> ConnectorStatusViews { get; set; } = null!;
+        public virtual DbSet<CpTagAccess> CpTagAccesses { get; set; } = null!;
         public virtual DbSet<MessageLog> MessageLogs { get; set; } = null!;
+        public virtual DbSet<SendRequest> SendRequests { get; set; } = null!;
         public virtual DbSet<Transaction> Transactions { get; set; } = null!;
 
-        
+        private IConfiguration _configuration;
+        private ILogger _logger;
+        public OcppCoreContext(DbContextOptions<OcppCoreContext> options , ILogger logger, IConfiguration config)
+            : base(options)
+        {
+            _configuration = config;
+            _logger = logger;
+        }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-                _logger.LogCritical("Database not configured");
+                _logger.Fatal("Database not configured");
                 // if (!string.IsNullOrEmpty(_configuration.GetConnectionString("MySql")))
                 // {
                 //     optionsBuilder.UseMySql(_configuration.GetConnectionString("MySql"), ServerVersion.Parse("8.0.28-mysql"));
@@ -61,8 +63,6 @@ namespace OCPP.Core.Database
             modelBuilder.Entity<ChargePoint>(entity =>
             {
                 entity.ToTable("ChargePoint");
-
-                entity.Property(e => e.Id).ValueGeneratedNever();
 
                 entity.Property(e => e.CbSerialNumber).HasMaxLength(25);
 
@@ -128,7 +128,7 @@ namespace OCPP.Core.Database
             {
                 entity.ToTable("ChargingProfile");
 
-                entity.HasIndex(e => e.ChargePointId, "fk_chargepoint_id_idx");
+                entity.HasIndex(e => e.ChargePointId, "fk_cp_cp_id_idx");
 
                 entity.Property(e => e.Id).HasColumnName("id");
 
@@ -148,14 +148,14 @@ namespace OCPP.Core.Database
                     .WithMany(p => p.ChargingProfiles)
                     .HasForeignKey(d => d.ChargePointId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("fk_chargepoint_id");
+                    .HasConstraintName("fk_cp_cp_id");
             });
 
             modelBuilder.Entity<ConnectorStatus>(entity =>
             {
                 entity.ToTable("ConnectorStatus");
 
-                entity.HasIndex(e => new { e.ChargePointId, e.ConnectorId }, "clustered_key");
+                entity.HasIndex(e => e.ChargePointId, "fk_cs_cp_id_idx");
 
                 entity.Property(e => e.ConnectorName).HasMaxLength(100);
 
@@ -177,7 +177,7 @@ namespace OCPP.Core.Database
                     .WithMany(p => p.ConnectorStatuses)
                     .HasForeignKey(d => d.ChargePointId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("fk_cp_cp_cpid");
+                    .HasConstraintName("fk_cs_cp_id");
             });
 
             modelBuilder.Entity<ConnectorStatusView>(entity =>
@@ -196,17 +196,40 @@ namespace OCPP.Core.Database
 
                 entity.Property(e => e.StartResult).HasMaxLength(100);
 
-                entity.Property(e => e.StartTagId).HasMaxLength(45);
-
                 entity.Property(e => e.StartTime).HasColumnType("datetime");
 
                 entity.Property(e => e.StopReason).HasMaxLength(100);
 
-                entity.Property(e => e.StopTagId).HasMaxLength(45);
-
                 entity.Property(e => e.StopTime).HasColumnType("datetime");
 
                 entity.Property(e => e.TransactionId).HasDefaultValueSql("'0'");
+            });
+
+            modelBuilder.Entity<CpTagAccess>(entity =>
+            {
+                entity.ToTable("CpTagAccess");
+
+                entity.HasIndex(e => e.ChargePointId, "fk_cta_cp_id_idx");
+
+                entity.HasIndex(e => e.TagId, "fk_tag_cptag_idx");
+
+                entity.Property(e => e.Id).HasColumnName("id");
+
+                entity.Property(e => e.CpTagStatus).HasMaxLength(45);
+
+                entity.Property(e => e.Expiry).HasColumnType("datetime");
+
+                entity.Property(e => e.Timestamp).HasColumnType("datetime");
+
+                entity.HasOne(d => d.ChargePoint)
+                    .WithMany(p => p.CpTagAccesses)
+                    .HasForeignKey(d => d.ChargePointId)
+                    .HasConstraintName("fk_cta_cp_id");
+
+                entity.HasOne(d => d.Tag)
+                    .WithMany(p => p.CpTagAccesses)
+                    .HasForeignKey(d => d.TagId)
+                    .HasConstraintName("fk_tag_cptag");
             });
 
             modelBuilder.Entity<MessageLog>(entity =>
@@ -225,21 +248,58 @@ namespace OCPP.Core.Database
                 entity.Property(e => e.Message).HasMaxLength(100);
             });
 
+            modelBuilder.Entity<SendRequest>(entity =>
+            {
+                entity.ToTable("SendRequest");
+
+                entity.HasIndex(e => e.ChargeTagId, "fk_ct_sq_id_idx");
+
+                entity.HasIndex(e => e.ChargePointId, "fk_sr_cp_id_idx");
+
+                entity.Property(e => e.CreatedDatetime).HasColumnType("datetime");
+
+                entity.Property(e => e.RequestType).HasMaxLength(45);
+
+                entity.Property(e => e.Status)
+                    .HasColumnType("enum('Queued','Sent','Completed','Failed','Cancelled')")
+                    .HasDefaultValueSql("'Queued'");
+
+                entity.Property(e => e.Uid).HasMaxLength(45);
+
+                entity.Property(e => e.UpdatedTimestamp)
+                    .HasColumnType("timestamp")
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.HasOne(d => d.ChargePoint)
+                    .WithMany(p => p.SendRequests)
+                    .HasForeignKey(d => d.ChargePointId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_sr_cp_id");
+
+                entity.HasOne(d => d.ChargeTag)
+                    .WithMany(p => p.SendRequests)
+                    .HasForeignKey(d => d.ChargeTagId)
+                    .OnDelete(DeleteBehavior.SetNull)
+                    .HasConstraintName("fk_ct_sq_id");
+            });
+
             modelBuilder.Entity<Transaction>(entity =>
             {
-                entity.HasIndex(e => e.ChargePointId, "fk_tx_cp_cpid_idx");
+                entity.HasIndex(e => e.StartTagId, "fk_starttagid_idx");
+
+                entity.HasIndex(e => e.ChargePointId, "fk_tx_cp_id_idx");
+
+                entity.HasIndex(e => e.StopTagId, "sk_stoptagid_ct_idx");
 
                 entity.Property(e => e.StartResult).HasMaxLength(100);
-
-                entity.Property(e => e.StartTagId).HasMaxLength(45);
 
                 entity.Property(e => e.StartTime).HasColumnType("datetime");
 
                 entity.Property(e => e.StopReason).HasMaxLength(100);
 
-                entity.Property(e => e.StopTagId).HasMaxLength(45);
-
                 entity.Property(e => e.StopTime).HasColumnType("datetime");
+
+                entity.Property(e => e.TransactionStatus).HasColumnType("enum('Started','Terminated','Completed')");
 
                 entity.Property(e => e.Uid).HasMaxLength(45);
 
@@ -247,7 +307,17 @@ namespace OCPP.Core.Database
                     .WithMany(p => p.Transactions)
                     .HasForeignKey(d => d.ChargePointId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("fk_tx_cp_cpid");
+                    .HasConstraintName("fk_tx_cp_id");
+
+                entity.HasOne(d => d.StartTag)
+                    .WithMany(p => p.TransactionStartTags)
+                    .HasForeignKey(d => d.StartTagId)
+                    .HasConstraintName("fk_starttagid_ct");
+
+                entity.HasOne(d => d.StopTag)
+                    .WithMany(p => p.TransactionStopTags)
+                    .HasForeignKey(d => d.StopTagId)
+                    .HasConstraintName("sk_stoptagid_ct");
             });
 
             OnModelCreatingPartial(modelBuilder);

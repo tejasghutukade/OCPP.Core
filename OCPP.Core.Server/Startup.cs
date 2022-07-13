@@ -17,15 +17,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
-
+using OCPP.Core.Library;
+using Serilog;
 namespace OCPP.Core.Server
 {
     public class Startup
@@ -33,7 +34,7 @@ namespace OCPP.Core.Server
         /// <summary>
         /// ILogger object
         /// </summary>
-        private ILoggerFactory LoggerFactory { get; set; }
+       
         public IConfiguration Configuration { get; }
         public Startup(IConfiguration configuration)
         {
@@ -45,9 +46,14 @@ namespace OCPP.Core.Server
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<OCPPCoreContext>(options =>
+            
+            services.AddDbContext<OcppCoreContext>(options =>
                 options.UseMySql(Configuration.GetConnectionString("MySql"),
                     ServerVersion.Parse("8.0.28-mysql")),ServiceLifetime.Transient);
+            services.AddTransient<OcppAuth>();
+            
+            services.AddTransient<ControllerOcpp16>();
+            services.AddTransient<ControllerOcpp20>();
             services.AddControllers();
             
         }
@@ -56,11 +62,10 @@ namespace OCPP.Core.Server
         //public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         public void Configure(IApplicationBuilder app,
                             IWebHostEnvironment env,
-                            ILoggerFactory loggerFactory)
+                            ILogger log)
         {
-            LoggerFactory = loggerFactory;
-            ILogger logger = loggerFactory.CreateLogger(typeof(Startup));
-            logger.LogTrace("Startup => Configure(...)");
+       
+            log.Verbose("Startup => Configure(...)");
 
             if (env.IsDevelopment())
             {
@@ -78,7 +83,7 @@ namespace OCPP.Core.Server
             app.UseWebSockets(webSocketOptions);
 
             // Integrate custom OCPP middleware for message processing
-            app.UseOCPPMiddleware();
+            app.UseOcppMiddleware();
 
         }
         

@@ -27,7 +27,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Logging;
+using Serilog;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
@@ -36,13 +36,13 @@ namespace OCPP.Core.Management.Controllers
     public partial class HomeController : BaseController
     {
         [Authorize]
-        public IActionResult Connector(string Id, string ConnectorId, ConnectorStatusViewModel csvm)
+        public IActionResult Connector(string id, string connectorId, ConnectorStatusViewModel csvm)
         {
             try
             {
                 if (User != null && !User.IsInRole(Constants.AdminRoleName))
                 {
-                    Logger.LogWarning("Connector: Request by non-administrator: {0}", User?.Identity?.Name);
+                    Logger.Warning("Connector: Request by non-administrator: {0}", User?.Identity?.Name);
                     TempData["ErrMsgKey"] = "AccessDenied";
                     return RedirectToAction("Error", new { Id = "" });
                 }
@@ -52,20 +52,20 @@ namespace OCPP.Core.Management.Controllers
 
                 using (var dbContext = _dbContext)
                 {
-                    Logger.LogTrace("Connector: Loading connectors...");
+                    Logger.Verbose("Connector: Loading connectors...");
                     List<ConnectorStatus> dbConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
-                    Logger.LogInformation("Connector: Found {0} connectors", dbConnectorStatuses.Count);
+                    Logger.Information("Connector: Found {0} connectors", dbConnectorStatuses.Count);
 
                     ConnectorStatus currentConnectorStatus = null;
-                    if (!string.IsNullOrEmpty(Id) && !string.IsNullOrEmpty(ConnectorId))
+                    if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(connectorId))
                     {
                         foreach (ConnectorStatus cs in dbConnectorStatuses)
                         {
-                            if (cs.ChargePointId.ToString().Equals(Id, StringComparison.InvariantCultureIgnoreCase) &&
-                                cs.ConnectorId.ToString().Equals(ConnectorId, StringComparison.InvariantCultureIgnoreCase))
+                            if (cs.ChargePointId.ToString().Equals(id, StringComparison.InvariantCultureIgnoreCase) &&
+                                cs.ConnectorId.ToString().Equals(connectorId, StringComparison.InvariantCultureIgnoreCase))
                             {
                                 currentConnectorStatus = cs;
-                                Logger.LogTrace("Connector: Current connector: {0} / {1}", cs.ChargePointId, cs.ConnectorId);
+                                Logger.Verbose("Connector: Current connector: {0} / {1}", cs.ChargePointId, cs.ConnectorId);
                                 break;
                             }
                         }
@@ -73,12 +73,12 @@ namespace OCPP.Core.Management.Controllers
 
                     if (Request.Method == "POST")
                     {
-                        if (currentConnectorStatus.ChargePointId.ToString() == Id)
+                        if (currentConnectorStatus.ChargePointId.ToString() == id)
                         {
                             // Save connector
                             currentConnectorStatus.ConnectorName = csvm.ConnectorName;
                             dbContext.SaveChanges();
-                            Logger.LogInformation("Connector: Edit => Connector saved: {0} / {1} => '{2}'", csvm.ChargePointId, csvm.ConnectorId, csvm.ConnectorName);
+                            Logger.Information("Connector: Edit => Connector saved: {0} / {1} => '{2}'", csvm.ChargePointId, csvm.ConnectorId, csvm.ConnectorName);
                         }
 
                         return RedirectToAction("Connector", new { Id = "" });
@@ -107,7 +107,7 @@ namespace OCPP.Core.Management.Controllers
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "Connector: Error loading connectors from database");
+                Logger.Error(exp, "Connector: Error loading connectors from database");
                 TempData["ErrMessage"] = exp.Message;
                 return RedirectToAction("Error", new { Id = "" });
             }

@@ -55,7 +55,11 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
-
+ocpp.core.frontend/
+OCPP.Core.ReactWebAPI/
+OCPP.Core.WebAPIReact/
+soft-ui-dashboard-pro-react-v3.1.0/
+tokyoUI/
 # StyleCop
 StyleCopReport.xml
 

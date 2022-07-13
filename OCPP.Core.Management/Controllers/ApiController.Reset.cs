@@ -25,7 +25,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Logging;
+using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 
@@ -34,15 +34,15 @@ namespace OCPP.Core.Management.Controllers
     public partial class ApiController
     {
         private readonly IStringLocalizer<ApiController> _localizer;
-        private readonly OCPPCoreContext _dbContext;
+        private readonly OcppCoreContext _dbContext;
         public ApiController(
             UserManager userManager,
             IStringLocalizer<ApiController> localizer,
-            ILoggerFactory loggerFactory,
-            IConfiguration config,OCPPCoreContext dbContext) : base(userManager, loggerFactory, config)
+            ILogger loggerFactory,
+            IConfiguration config,OcppCoreContext dbContext) : base(userManager, loggerFactory, config)
         {
             _localizer = localizer;
-            Logger = loggerFactory.CreateLogger<HomeController>();
+            Logger = loggerFactory;
             _dbContext = dbContext;
         }
 
@@ -52,14 +52,14 @@ namespace OCPP.Core.Management.Controllers
         {
             if (!User.IsInRole(Constants.AdminRoleName))
             {
-                Logger.LogWarning("Reset: Request by non-administrator: {UserIdentity}", User.Identity?.Name);
+                Logger.Warning("Reset: Request by non-administrator: {UserIdentity}", User.Identity?.Name);
                 return StatusCode((int)HttpStatusCode.Unauthorized);
             }
 
             int httpStatuscode = (int)HttpStatusCode.OK;
             string resultContent = string.Empty;
 
-            Logger.LogTrace("Reset: Request to restart chargepoint '{Id}'", id);
+            Logger.Verbose("Reset: Request to restart chargepoint '{Id}'", id);
             if (!string.IsNullOrEmpty(id))
             {
                 try
@@ -93,7 +93,7 @@ namespace OCPP.Core.Management.Controllers
                                         }
                                         else
                                         {
-                                            Logger.LogWarning("Reset: No API-Key configured!");
+                                            Logger.Warning("Reset: No API-Key configured!");
                                         }
 
                                         HttpResponseMessage response = await httpClient.GetAsync(uri);
@@ -105,7 +105,7 @@ namespace OCPP.Core.Management.Controllers
                                                 try
                                                 {
                                                     dynamic? jsonObject = JsonConvert.DeserializeObject(jsonResult);
-                                                    Logger.LogInformation("Reset: Result of API request is '{JsonResult}'", jsonResult);
+                                                    Logger.Information("Reset: Result of API request is '{JsonResult}'", jsonResult);
                                                     string status = jsonObject?.status ?? string.Empty;
                                                     switch (status)
                                                     {
@@ -125,14 +125,14 @@ namespace OCPP.Core.Management.Controllers
                                                 }
                                                 catch (Exception exp)
                                                 {
-                                                    Logger.LogError(exp, "Reset: Error in JSON result => {ErrorMessage}", exp.Message);
+                                                    Logger.Error(exp, "Reset: Error in JSON result => {ErrorMessage}", exp.Message);
                                                     httpStatuscode = (int)HttpStatusCode.OK;
                                                     resultContent = _localizer["ResetError"];
                                                 }
                                             }
                                             else
                                             {
-                                                Logger.LogError("Reset: Result of API request is empty");
+                                                Logger.Error("Reset: Result of API request is empty");
                                                 httpStatuscode = (int)HttpStatusCode.OK;
                                                 resultContent = _localizer["ResetError"];
                                             }
@@ -145,7 +145,7 @@ namespace OCPP.Core.Management.Controllers
                                         }
                                         else
                                         {
-                                            Logger.LogError("Reset: Result of API  request => httpStatus={StatusCode}", response.StatusCode);
+                                            Logger.Error("Reset: Result of API  request => httpStatus={StatusCode}", response.StatusCode);
                                             httpStatuscode = (int)HttpStatusCode.OK;
                                             resultContent = _localizer["ResetError"];
                                         }
@@ -153,7 +153,7 @@ namespace OCPP.Core.Management.Controllers
                                 }
                                 catch (Exception exp)
                                 {
-                                    Logger.LogError(exp, "Reset: Error in API request => {ErrorMessage}", exp.Message);
+                                    Logger.Error(exp, "Reset: Error in API request => {ErrorMessage}", exp.Message);
                                     httpStatuscode = (int)HttpStatusCode.OK;
                                     resultContent = _localizer["ResetError"];
                                 }
@@ -161,7 +161,7 @@ namespace OCPP.Core.Management.Controllers
                         }
                         else
                         {
-                            Logger.LogWarning("Reset: Error loading charge point '{Id}' from database", id);
+                            Logger.Warning("Reset: Error loading charge point '{Id}' from database", id);
                             httpStatuscode = (int)HttpStatusCode.OK;
                             resultContent = _localizer["UnknownChargepoint"];
                         }
@@ -169,7 +169,7 @@ namespace OCPP.Core.Management.Controllers
                 }
                 catch (Exception exp)
                 {
-                    Logger.LogError(exp, "Reset: Error loading charge point from database");
+                    Logger.Error(exp, "Reset: Error loading charge point from database");
                     httpStatuscode = (int)HttpStatusCode.OK;
                     resultContent = _localizer["ResetError"];
                 }

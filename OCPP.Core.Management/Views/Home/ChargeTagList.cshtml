@@ -28,7 +28,7 @@
                         <td>@tag.TagName</td>
                         <td>@tag.ParentTagId</td>
                         <td>@((tag.ExpiryDate != null) ? tag.ExpiryDate.Value.ToString(ViewBag.DatePattern) : "-")</td>
-                        <td>@((tag.Blocked == true) ? "1" : "0")</td>
+                        <td>@((tag.TagStatus == nameof(ChargeTagStatus.Blocked)) ? "1" : "0")</td>
                     </tr>
                 }
             }

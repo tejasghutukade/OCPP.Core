@@ -25,7 +25,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using Serilog;
 using OCPP.Core.Management.Models;
 
 namespace OCPP.Core.Management.Controllers
@@ -35,10 +35,10 @@ namespace OCPP.Core.Management.Controllers
     {
         public AccountController(
             UserManager userManager,
-            ILoggerFactory loggerFactory,
+            ILogger loggerFactory,
             IConfiguration config) : base(userManager, loggerFactory, config)
         {
-            Logger = loggerFactory.CreateLogger<AccountController>();
+            Logger = loggerFactory;
         }
 
         // GET: /Account/Login
@@ -64,12 +64,12 @@ namespace OCPP.Core.Management.Controllers
                 await UserManager.SignIn(this.HttpContext, userModel, false);
                 if (userModel != null && !string.IsNullOrWhiteSpace(userModel.Username))
                 {
-                    Logger.LogInformation("User '{0}' logged in", userModel.Username);
+                    Logger.Information("User '{0}' logged in", userModel.Username);
                     return RedirectToLocal(returnUrl);
                 }
                 else
                 {
-                    Logger.LogInformation("Invalid login attempt: User '{0}'", userModel.Username);
+                    Logger.Information("Invalid login attempt: User '{0}'", userModel.Username);
                     ModelState.AddModelError(string.Empty, "Invalid login attempt");
                     return View(userModel);
                 }
@@ -82,7 +82,7 @@ namespace OCPP.Core.Management.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Logout(UserModel userModel)
         {
-            Logger.LogInformation("Signing our user '{0}'", userModel.Username);
+            Logger.Information("Signing our user '{0}'", userModel.Username);
             await UserManager.SignOut(this.HttpContext);
 
             return RedirectToAction(nameof(AccountController.Login), "Account");

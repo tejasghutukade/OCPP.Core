@@ -5,11 +5,15 @@ VisualStudioVersion = 16.0.30621.155
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Server", "OCPP.Core.Server\OCPP.Core.Server.csproj", "{BABF027C-B603-4B0C-9637-BBFB5051E0E1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.DatabaseOld", "OCPP.Core.DatabaseOld\OCPP.Core.DatabaseOld.csproj", "{AC9369B7-EC94-4EA0-87E7-B2EE8A2C1792}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OCPP.Core.Management", "OCPP.Core.Management\OCPP.Core.Management.csproj", "{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OCPP.Core.Database", "OCPP.Core.Database\OCPP.Core.Database.csproj", "{B4E6ABA6-C4FF-43AE-8C8C-7C2D592D6A51}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OCPP.Core.Library", "OCPP.Core.Library\OCPP.Core.Library.csproj", "{69EA9C17-EAEC-4748-80D7-11224716695A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OCPP.Core.ReactWebAPI", "OCPP.Core.ReactWebAPI\OCPP.Core.ReactWebAPI.csproj", "{996C5DAC-E88F-4249-A5E0-6B3603F2F2A0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OCPP.Core.WebAPI", "OCPP.Core.WebAPI\OCPP.Core.WebAPI.csproj", "{D0507E32-FE27-4371-8055-767C23B4A0F6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,10 +25,6 @@ Global
 		{BABF027C-B603-4B0C-9637-BBFB5051E0E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BABF027C-B603-4B0C-9637-BBFB5051E0E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BABF027C-B603-4B0C-9637-BBFB5051E0E1}.Release|Any CPU.Build.0 = Release|Any CPU
-		{AC9369B7-EC94-4EA0-87E7-B2EE8A2C1792}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{AC9369B7-EC94-4EA0-87E7-B2EE8A2C1792}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{AC9369B7-EC94-4EA0-87E7-B2EE8A2C1792}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{AC9369B7-EC94-4EA0-87E7-B2EE8A2C1792}.Release|Any CPU.Build.0 = Release|Any CPU
 		{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26D1B695-4C8E-496E-A0BC-AE9E1FDB2788}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -33,6 +33,18 @@ Global
 		{B4E6ABA6-C4FF-43AE-8C8C-7C2D592D6A51}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B4E6ABA6-C4FF-43AE-8C8C-7C2D592D6A51}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B4E6ABA6-C4FF-43AE-8C8C-7C2D592D6A51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{69EA9C17-EAEC-4748-80D7-11224716695A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69EA9C17-EAEC-4748-80D7-11224716695A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69EA9C17-EAEC-4748-80D7-11224716695A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69EA9C17-EAEC-4748-80D7-11224716695A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{996C5DAC-E88F-4249-A5E0-6B3603F2F2A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{996C5DAC-E88F-4249-A5E0-6B3603F2F2A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{996C5DAC-E88F-4249-A5E0-6B3603F2F2A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{996C5DAC-E88F-4249-A5E0-6B3603F2F2A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0507E32-FE27-4371-8055-767C23B4A0F6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0507E32-FE27-4371-8055-767C23B4A0F6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0507E32-FE27-4371-8055-767C23B4A0F6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0507E32-FE27-4371-8055-767C23B4A0F6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

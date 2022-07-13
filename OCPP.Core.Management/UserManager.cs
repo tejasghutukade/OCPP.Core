@@ -34,18 +34,18 @@ namespace OCPP.Core.Management
 {
     public class UserManager
     {
-        private IConfiguration Configuration;
+        private IConfiguration _configuration;
 
         public UserManager(IConfiguration configuration)
         {
-            Configuration = configuration;
+            _configuration = configuration;
         }
 
         public async Task SignIn(HttpContext httpContext, UserModel user, bool isPersistent = false)
         {
             try
             {
-                IEnumerable cfgUsers = Configuration.GetSection("Users").GetChildren();
+                IEnumerable cfgUsers = _configuration.GetSection("Users").GetChildren();
 
                 foreach (ConfigurationSection cfgUser in cfgUsers)
                 {

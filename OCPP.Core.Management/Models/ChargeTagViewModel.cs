@@ -37,7 +37,7 @@ namespace OCPP.Core.Management.Models
         public string TagId { get; set; }
 
         [Required, StringLength(200)]
-        public string TagName { get; set; }
+        public string? TagName { get; set; }
 
         [StringLength(50)]
         public string ParentTagId { get; set; }

@@ -25,7 +25,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using Microsoft.Extensions.Logging;
+using Serilog;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
@@ -34,15 +34,15 @@ namespace OCPP.Core.Management.Controllers
     public partial class HomeController : BaseController
     {
         [Authorize]
-        public IActionResult Transactions(string Id, string ConnectorId)
+        public IActionResult Transactions(string id, string connectorId)
         {
-            Logger.LogTrace("Transactions: Loading charge point transactions...");
+            Logger.Verbose("Transactions: Loading charge point transactions...");
 
             int currentConnectorId = -1;
-            int.TryParse(ConnectorId, out currentConnectorId);
+            int.TryParse(connectorId, out currentConnectorId);
 
             TransactionListViewModel tlvm = new TransactionListViewModel();
-            tlvm.CurrentChargePointId = Id;
+            tlvm.CurrentChargePointId = id;
             tlvm.CurrentConnectorId = currentConnectorId;
             tlvm.ConnectorStatuses = new List<ConnectorStatus>();
             tlvm.Transactions = new List<Transaction>();
@@ -72,10 +72,10 @@ namespace OCPP.Core.Management.Controllers
 
                 using (var dbContext = _dbContext)
                 {
-                    Logger.LogTrace("Transactions: Loading charge points...");
+                    Logger.Verbose("Transactions: Loading charge points...");
                     tlvm.ChargePoints = dbContext.ChargePoints.ToList<ChargePoint>();
 
-                    Logger.LogTrace("Transactions: Loading charge points connectors...");
+                    Logger.Verbose("Transactions: Loading charge points connectors...");
                     tlvm.ConnectorStatuses = dbContext.ConnectorStatuses.ToList<ConnectorStatus>();
 
                     // Count connectors for every charge point (=> naming scheme)
@@ -119,7 +119,7 @@ namespace OCPP.Core.Management.Controllers
 
 
                     // load charge tags for name resolution
-                    Logger.LogTrace("Transactions: Loading charge tags...");
+                    Logger.Verbose("Transactions: Loading charge tags...");
                     List<ChargeTag> chargeTags = dbContext.ChargeTags.ToList<ChargeTag>();
                     tlvm.ChargeTags = new Dictionary<string, ChargeTag>();
                     if (chargeTags != null)
@@ -132,7 +132,7 @@ namespace OCPP.Core.Management.Controllers
 
                     if (!string.IsNullOrEmpty(tlvm.CurrentChargePointId))
                     {
-                        Logger.LogTrace("Transactions: Loading charge point transactions...");
+                        Logger.Verbose("Transactions: Loading charge point transactions...");
                         tlvm.Transactions = dbContext.Transactions
                                             .Where(t => t.ChargePointId.ToString() == tlvm.CurrentChargePointId &&
                                                         t.ConnectorId == tlvm.CurrentConnectorId &&
@@ -144,7 +144,7 @@ namespace OCPP.Core.Management.Controllers
             }
             catch (Exception exp)
             {
-                Logger.LogError(exp, "Transactions: Error loading charge points from database");
+                Logger.Error(exp, "Transactions: Error loading charge points from database");
             }
 
             return View(tlvm);

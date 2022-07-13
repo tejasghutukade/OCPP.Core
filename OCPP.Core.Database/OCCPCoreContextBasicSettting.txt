@@ -1,6 +1,6 @@
 private IConfiguration _configuration;
         private ILogger _logger;
-        public OCPPCoreContext(DbContextOptions<OCPPCoreContext> options , ILoggerFactory loggerFactory, IConfiguration config)
+        public OCPPCoreContext(DbContextOptions<OCPPCoreContext> options , ILogger loggerFactory, IConfiguration config)
             : base(options)
         {
             _configuration = config;
@@ -31,3 +31,7 @@ private IConfiguration _configuration;
                 // }
             }
         }
+        
+        
+        
+  dotnet ef dbcontext scaffold "Server=localhost;Port=3307;User=root;Password=tejas123;Database=OCPPCore;TreatTinyAsBoolean=True" "Pomelo.EntityFrameworkCore.MySql" --force
