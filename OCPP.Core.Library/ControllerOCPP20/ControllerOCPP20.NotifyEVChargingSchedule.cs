@@ -17,14 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
-
 using OCPP.Core.Library.Messages_OCPP20;
 
 namespace OCPP.Core.Library
@@ -59,7 +53,8 @@ namespace OCPP.Core.Library
                             // Concat all periods and write them in messag log...
 
                             DateTimeOffset timeBase = notifyEvChargingScheduleRequest.TimeBase;
-                            foreach (ChargingSchedulePeriodType period in notifyEvChargingScheduleRequest.ChargingSchedule?.ChargingSchedulePeriod)
+                            foreach (ChargingSchedulePeriodType period in notifyEvChargingScheduleRequest
+                                         .ChargingSchedule?.ChargingSchedulePeriod)
                             {
                                 if (periods.Length > 0)
                                 {
@@ -67,7 +62,8 @@ namespace OCPP.Core.Library
                                 }
 
                                 DateTimeOffset time = timeBase.AddSeconds(period.StartPeriod);
-                                periods.Append(string.Format("{0}: {1}{2}", time.ToString("O"), period.Limit, notifyEvChargingScheduleRequest.ChargingSchedule.ChargingRateUnit.ToString()));
+                                periods.Append(string.Format("{0}: {1}{2}", time.ToString("O"), period.Limit,
+                                    notifyEvChargingScheduleRequest.ChargingSchedule.ChargingRateUnit.ToString()));
 
                                 if (period.NumberPhases > 0)
                                 {
@@ -76,6 +72,7 @@ namespace OCPP.Core.Library
                             }
                         }
                     }
+
                     connectorId = notifyEvChargingScheduleRequest.EvseId;
                     Logger.Information("NotifyEVChargingSchedule => {0}", periods.ToString());
                 }
