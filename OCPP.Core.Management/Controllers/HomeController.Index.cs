@@ -20,16 +20,17 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
+using Serilog;
 
 namespace OCPP.Core.Management.Controllers
 {
@@ -89,7 +90,7 @@ namespace OCPP.Core.Management.Controllers
                             }
 
                             HttpResponseMessage response = await httpClient.GetAsync(uri);
-                            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                            if (response.StatusCode == HttpStatusCode.OK)
                             {
                                 string jsonData = await response.Content.ReadAsStringAsync();
                                 if (!string.IsNullOrEmpty(jsonData))
@@ -261,7 +262,7 @@ namespace OCPP.Core.Management.Controllers
                             // Fallback: assume 1 connector and show main charge point
                             if (foundConnectorStatus == false)
                             {
-                                // no connector status found in DB => show configured charge point in overview
+                                // no connector status found in OCPP.Core.DB => show configured charge point in overview
                                 ChargePointsOverviewViewModel cpovm = new ChargePointsOverviewViewModel();
                                 cpovm.ChargePointId = cp.ChargePointId.ToString();
                                 cpovm.ConnectorId = 0;

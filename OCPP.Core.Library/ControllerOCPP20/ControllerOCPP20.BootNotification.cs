@@ -17,13 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
-
 using OCPP.Core.Library.Messages_OCPP20;
 
 namespace OCPP.Core.Library
@@ -33,7 +27,7 @@ namespace OCPP.Core.Library
         public string? HandleBootNotification(OcppMessage msgIn, OcppMessage msgOut)
         {
             string? errorCode = null;
-            string bootReason = null;
+            string? bootReason = null;
             try
             {
                 Logger.Verbose("Processing boot notification...");
@@ -52,7 +46,7 @@ namespace OCPP.Core.Library
                 bootNotificationResponse.StatusInfo.AdditionalInfo = string.Empty;
 
                 bootNotificationResponse.CustomData = new CustomDataType();
-                bootNotificationResponse.CustomData.VendorId = VendorId;
+                bootNotificationResponse.CustomData.VendorId = Library.ControllerOcpp20.VendorId;
 
                 if (ChargePointStatus != null)
                 {

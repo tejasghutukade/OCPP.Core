@@ -17,11 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Library.Messages_OCPP20;
@@ -41,17 +36,17 @@ namespace OCPP.Core.Library
                 Logger.Verbose("Processing authorize request...");
                 AuthorizeRequest authorizeRequest = JsonConvert.DeserializeObject<AuthorizeRequest>(msgIn.JsonPayload);
                 Logger.Verbose("Authorize => Message deserialized");
-                idTag = CleanChargeTagId(authorizeRequest.IdToken?.IdToken, Logger);
+                idTag = ControllerBase.CleanChargeTagId(authorizeRequest.IdToken?.IdToken, Logger);
 
                 authorizeResponse.CustomData = new CustomDataType();
-                authorizeResponse.CustomData.VendorId = VendorId;
+                authorizeResponse.CustomData.VendorId = Library.ControllerOcpp20.VendorId;
 
                 authorizeResponse.IdTokenInfo = new IdTokenInfoType();
                 authorizeResponse.IdTokenInfo.CustomData = new CustomDataType();
-                authorizeResponse.IdTokenInfo.CustomData.VendorId = VendorId;
+                authorizeResponse.IdTokenInfo.CustomData.VendorId = Library.ControllerOcpp20.VendorId;
                 authorizeResponse.IdTokenInfo.GroupIdToken = new IdTokenType();
                 authorizeResponse.IdTokenInfo.GroupIdToken.CustomData = new CustomDataType();
-                authorizeResponse.IdTokenInfo.GroupIdToken.CustomData.VendorId = VendorId;
+                authorizeResponse.IdTokenInfo.GroupIdToken.CustomData.VendorId = Library.ControllerOcpp20.VendorId;
                 authorizeResponse.IdTokenInfo.GroupIdToken.IdToken = string.Empty;
 
                 try

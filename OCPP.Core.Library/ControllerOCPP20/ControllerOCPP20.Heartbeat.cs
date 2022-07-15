@@ -17,11 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Library.Messages_OCPP20;
 
@@ -36,7 +31,7 @@ namespace OCPP.Core.Library
             Logger.Verbose("Processing heartbeat...");
             HeartbeatResponse heartbeatResponse = new HeartbeatResponse();
             heartbeatResponse.CustomData = new CustomDataType();
-            heartbeatResponse.CustomData.VendorId = VendorId;
+            heartbeatResponse.CustomData.VendorId = Library.ControllerOcpp20.VendorId;
 
             heartbeatResponse.CurrentTime = DateTimeOffset.UtcNow;
 

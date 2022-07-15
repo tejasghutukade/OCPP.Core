@@ -1,18 +1,19 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using Serilog;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.WebSockets;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Library;
+using Serilog;
 using Serilog.Events;
 
 namespace OCPP.Core.Server
@@ -70,7 +71,7 @@ namespace OCPP.Core.Server
                 string authHeader = context.Request.Headers["Authorization"].ToString() ?? string.Empty;
                 if (!string.IsNullOrEmpty(authHeader))
                 {
-                    string[] cred = System.Text.Encoding.ASCII.GetString(Convert.FromBase64String(authHeader.Substring(6))).Split(':');
+                    string[] cred = Encoding.ASCII.GetString(Convert.FromBase64String(authHeader.Substring(6))).Split(':');
                     X509Certificate2? clientCert = context.Connection.ClientCertificate;
                     ChargePoint? chargePoint = auth.Authenticate(chargepointIdentifier,cred[0] ,cred[1], clientCert);
                     if (chargePoint == null)

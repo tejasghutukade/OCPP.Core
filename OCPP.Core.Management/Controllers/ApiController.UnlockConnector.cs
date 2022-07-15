@@ -27,7 +27,6 @@ using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 
-
 namespace OCPP.Core.Management.Controllers
 {
     public partial class ApiController : BaseController

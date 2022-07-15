@@ -17,14 +17,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
-using OCPP.Core.Library.Messages_OCPP16;
+using OCPP.Core.Library.Messages_OCPP16.OICP;
 
 namespace OCPP.Core.Library
 {
@@ -35,10 +30,12 @@ namespace OCPP.Core.Library
             string? errorCode = null;
 
             Logger.Verbose("Processing heartbeat...");
-            HeartbeatResponse heartbeatResponse = new HeartbeatResponse();
-            heartbeatResponse.CurrentTime = DateTimeOffset.UtcNow;
-            
-            var chargePoint = DbContext.ChargePoints.FirstOrDefault(x => x.ChargePointId.Equals(ChargePointStatus.ExtId));
+            var heartbeatResponse = new HeartbeatResponse
+            {
+                CurrentTime = DateTimeOffset.UtcNow
+            };
+
+            var chargePoint = Queryable.FirstOrDefault<ChargePoint>(DbContext.ChargePoints, x => x.ChargePointId.Equals(ChargePointStatus.ExtId));
             if (chargePoint != null)
             {
                 chargePoint.CurrentTime = DateTime.UtcNow;

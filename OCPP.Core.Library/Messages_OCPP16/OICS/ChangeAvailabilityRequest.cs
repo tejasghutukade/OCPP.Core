@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace OCPP.Core.Library.Messages_OCPP16;
+namespace OCPP.Core.Library.Messages_OCPP16.OICS;
 
 [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.3.1.0 (Newtonsoft.Json v9.0.0.0)")]
 public class ChangeAvailabilityRequest

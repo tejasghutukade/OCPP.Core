@@ -17,13 +17,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+
 using Microsoft.Extensions.Configuration;
-using Serilog;
 using OCPP.Core.Database;
+using Serilog;
 using OCPP.Core.Library.Messages_OCPP16;
 
 namespace OCPP.Core.Library
@@ -45,9 +42,11 @@ namespace OCPP.Core.Library
         /// </summary>
         public async Task<OcppMessage> ProcessRequest(OcppMessage msgIn)
         {
-            OcppMessage msgOut = new OcppMessage();
-            msgOut.MessageType = "3";
-            msgOut.UniqueId = msgIn.UniqueId;
+            var msgOut = new OcppMessage
+            {
+                MessageType = "3",
+                UniqueId = msgIn.UniqueId
+            };
 
             string? errorCode = null;
 
@@ -90,13 +89,11 @@ namespace OCPP.Core.Library
                     break;
             }
 
-            if (!string.IsNullOrEmpty(errorCode))
-            {
-                // Inavlid message type => return type "4" (CALLERROR)
-                msgOut.MessageType = "4";
-                msgOut.ErrorCode = errorCode;
-                Logger.Debug("ControllerOCPP16 => Return error code messge: ErrorCode={ErrorCode}", errorCode);
-            }
+            if (string.IsNullOrEmpty(errorCode)) return msgOut;
+            // Invalid message type => return type "4" (CALL_ERROR)
+            msgOut.MessageType = "4";
+            msgOut.ErrorCode = errorCode;
+            Logger.Debug("ControllerOCPP16 => Return error code messge: ErrorCode={ErrorCode}", errorCode);
 
             return msgOut;
         }
@@ -189,34 +186,34 @@ namespace OCPP.Core.Library
         /// <summary>
         /// Helper function for writing a log entry in database
         /// </summary>
-        private bool WriteMessageLog(uint chargePointId, int? connectorId, string message, string result, string? errorCode)
+        private bool WriteMessageLog(uint chargePointId, int? connectorId, string message, string? result, string? errorCode)
         {
             try
             {
-                int dbMessageLog = Configuration.GetValue<int>("DbMessageLog", 0);
+                var dbMessageLog = Configuration.GetValue<int>("DbMessageLog", 0);
                 if (dbMessageLog > 0 && chargePointId > 0)
                 {
-                    bool doLog = (dbMessageLog > 1 ||
-                                    (message != "BootNotification" &&
-                                     message != "Heartbeat" &&
-                                     message != "DataTransfer" &&
-                                     message != "StatusNotification"));
+                    var doLog = (dbMessageLog > 1 ||
+                                 (message != "BootNotification" &&
+                                  message != "Heartbeat" &&
+                                  message != "DataTransfer" &&
+                                  message != "StatusNotification"));
 
                     if (doLog)
                     {
-                        using (var dbContext = DbContext)
+                        using var dbContext = DbContext;
+                        var msgLog = new MessageLog
                         {
-                            MessageLog msgLog = new MessageLog();
-                            msgLog.ChargePointId = chargePointId;
-                            msgLog.ConnectorId = connectorId;
-                            msgLog.LogTime = DateTime.UtcNow;
-                            msgLog.Message = message;
-                            msgLog.Result = result??string.Empty;
-                            msgLog.ErrorCode = errorCode;
-                            dbContext.MessageLogs.Add(msgLog);
-                            Logger.Verbose("MessageLog => Writing entry '{Message}'", message);
-                            dbContext.SaveChanges();
-                        }
+                            ChargePointId = chargePointId,
+                            ConnectorId = connectorId,
+                            LogTime = DateTime.UtcNow,
+                            Message = message,
+                            Result = result??string.Empty,
+                            ErrorCode = errorCode
+                        };
+                        dbContext.MessageLogs.Add(msgLog);
+                        Logger.Verbose("MessageLog => Writing entry '{Message}'", message);
+                        dbContext.SaveChanges();
                         return true;
                     }
                 }

@@ -42,128 +42,117 @@
  </cs:meterValuesRequest>
  */
 
-using System;
 using System.Globalization;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
-
 using OCPP.Core.Library.Messages_OCPP16;
+using OCPP.Core.Library.Messages_OCPP16.OICP;
 
 namespace OCPP.Core.Library
 {
     public partial class ControllerOcpp16
     {
-        public async Task<string> HandleMeterValues(OcppMessage msgIn, OcppMessage msgOut)
+        private async Task<string?> HandleMeterValues(OcppMessage msgIn, OcppMessage msgOut)
         {
-            string errorCode = null;
-            MeterValuesResponse meterValuesResponse = new MeterValuesResponse();
+            string? errorCode = null;
+            var meterValuesResponse = new MeterValuesResponse();
 
-            int connectorId = -1;
-            string msgMeterValue = string.Empty;
+            var connectorId = -1;
+            var msgMeterValue = string.Empty;
 
             try
             {
                 Logger.Verbose("Processing meter values...");
-                MeterValuesRequest? meterValueRequest = JsonConvert.DeserializeObject<MeterValuesRequest>(msgIn.JsonPayload);
-                Logger.Verbose("MeterValues => Message deserialized");
-
-                if (meterValueRequest == null)
+                if (msgIn.JsonPayload != null)
                 {
-                    errorCode = "Meter value request is null";
-                }
-                else
-                {
-                    connectorId = meterValueRequest.ConnectorId;
+                    var meterValueRequest = JsonConvert.DeserializeObject<MeterValuesRequest>(msgIn.JsonPayload);
+                    Logger.Verbose("MeterValues => Message deserialized");
 
-                    if (ChargePointStatus != null)
+                    if (meterValueRequest == null)
                     {
+                        errorCode = "Meter value request is null";
+                    }
+                    else
+                    {
+                        connectorId = meterValueRequest.ConnectorId;
+
                         // Known charge station => process meter values
                         double currentChargeKw = -1;
                         double meterKwh = -1;
                         DateTimeOffset? meterTime = null;
                         double stateOfCharge = -1;
-                        foreach (MeterValue meterValue in meterValueRequest.MeterValue)
+                        foreach (var meterValue in meterValueRequest.MeterValue)
                         {
-                            foreach (SampledValue sampleValue in meterValue.SampledValue)
+                            foreach (var sampleValue in meterValue.SampledValue)
                             {
-                                Logger.Verbose("MeterValues => Context={0} / Format={1} / Value={2} / Unit={3} / Location={4} / Measurand={5} / Phase={6}",
+                                Logger.Verbose("MeterValues => Context={Context} / Format={Format} / Value={Value} / Unit={Unit} / Location={Location} / Measurand={Measurand} / Phase={Phase}",
                                     sampleValue.Context, sampleValue.Format, sampleValue.Value, sampleValue.Unit, sampleValue.Location, sampleValue.Measurand, sampleValue.Phase);
 
-                                if (sampleValue.Measurand == SampledValueMeasurand.PowerActiveImport)
+                                switch (sampleValue.Measurand)
                                 {
                                     // current charging power
-                                    if (double.TryParse(sampleValue.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out currentChargeKw))
+                                    case SampledValueMeasurand.PowerActiveImport when double.TryParse(sampleValue.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out currentChargeKw):
                                     {
-                                        if (sampleValue.Unit == SampledValueUnit.W ||
-                                            sampleValue.Unit == SampledValueUnit.Va ||
-                                            sampleValue.Unit == SampledValueUnit.Var ||
-                                            sampleValue.Unit == null)
+                                        switch (sampleValue.Unit)
                                         {
-                                            Logger.Verbose("MeterValues => Charging '{0:0.0}' W", currentChargeKw);
-                                            // convert W => kW
-                                            currentChargeKw = currentChargeKw / 1000;
+                                            case SampledValueUnit.W:
+                                            case SampledValueUnit.Va:
+                                            case SampledValueUnit.Var:
+                                            case null:
+                                                Logger.Verbose("MeterValues => Charging '{0:0.0}' W", currentChargeKw);
+                                                // convert W => kW
+                                                currentChargeKw = currentChargeKw / 1000;
+                                                break;
+                                            case SampledValueUnit.Kw:
+                                            case SampledValueUnit.Kva:
+                                            case SampledValueUnit.Kvar:
+                                                // already kW => OK
+                                                Logger.Verbose("MeterValues => Charging '{0:0.0}' kW", currentChargeKw);
+                                                currentChargeKw = currentChargeKw;
+                                                break;
+                                            default:
+                                                Logger.Warning("MeterValues => Charging: unexpected unit: '{Unit}' (Value={Value})", sampleValue.Unit, sampleValue.Value);
+                                                break;
                                         }
-                                        else if (sampleValue.Unit == SampledValueUnit.Kw ||
-                                                sampleValue.Unit == SampledValueUnit.Kva ||
-                                                sampleValue.Unit == SampledValueUnit.Kvar)
-                                        {
-                                            // already kW => OK
-                                            Logger.Verbose("MeterValues => Charging '{0:0.0}' kW", currentChargeKw);
-                                            currentChargeKw = currentChargeKw;
-                                        }
-                                        else
-                                        {
-                                            Logger.Warning("MeterValues => Charging: unexpected unit: '{0}' (Value={1})", sampleValue.Unit, sampleValue.Value);
-                                        }
+
+                                        break;
                                     }
-                                    else
-                                    {
-                                        Logger.Error("MeterValues => Charging: invalid value '{0}' (Unit={1})", sampleValue.Value, sampleValue.Unit);
-                                    }
-                                }
-                                else if (sampleValue.Measurand == SampledValueMeasurand.EnergyActiveImportRegister ||
-                                        sampleValue.Measurand == null)
-                                {
+                                    case SampledValueMeasurand.PowerActiveImport:
+                                        Logger.Error("MeterValues => Charging: invalid value '{Value}' (Unit={Unit})", sampleValue.Value, sampleValue.Unit);
+                                        break;
                                     // charged amount of energy
-                                    if (double.TryParse(sampleValue.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out meterKwh))
+                                    case SampledValueMeasurand.EnergyActiveImportRegister or null when double.TryParse(sampleValue.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out meterKwh):
                                     {
-                                        if (sampleValue.Unit == SampledValueUnit.Wh ||
-                                            sampleValue.Unit == SampledValueUnit.Varh ||
-                                            sampleValue.Unit == null)
+                                        switch (sampleValue.Unit)
                                         {
-                                            Logger.Verbose("MeterValues => Value: '{0:0.0}' Wh", meterKwh);
-                                            // convert Wh => kWh
-                                            meterKwh = meterKwh / 1000;
-                                        }
-                                        else if (sampleValue.Unit == SampledValueUnit.KWh ||
-                                                sampleValue.Unit == SampledValueUnit.Kvarh)
-                                        {
-                                            // already kWh => OK
-                                            Logger.Verbose("MeterValues => Value: '{0:0.0}' kWh", meterKwh);
-                                        }
-                                        else
-                                        {
-                                            Logger.Warning("MeterValues => Value: unexpected unit: '{0}' (Value={1})", sampleValue.Unit, sampleValue.Value);
+                                            case SampledValueUnit.Wh:
+                                            case SampledValueUnit.Varh:
+                                            case null:
+                                                Logger.Verbose("MeterValues => Value: '{0:0.0}' Wh", meterKwh);
+                                                // convert Wh => kWh
+                                                meterKwh = meterKwh / 1000;
+                                                break;
+                                            case SampledValueUnit.KWh:
+                                            case SampledValueUnit.Kvarh:
+                                                // already kWh => OK
+                                                Logger.Verbose("MeterValues => Value: '{0:0.0}' kWh", meterKwh);
+                                                break;
+                                            default:
+                                                Logger.Warning("MeterValues => Value: unexpected unit: '{0}' (Value={1})", sampleValue.Unit, sampleValue.Value);
+                                                break;
                                         }
                                         meterTime = meterValue.Timestamp;
+                                        break;
                                     }
-                                    else
-                                    {
-                                        Logger.Error("MeterValues => Value: invalid value '{0}' (Unit={1})", sampleValue.Value, sampleValue.Unit);
-                                    }
-                                }
-                                else if (sampleValue.Measurand == SampledValueMeasurand.SoC)
-                                {
+                                    case SampledValueMeasurand.EnergyActiveImportRegister or null:
+                                        Logger.Error("MeterValues => Value: invalid value '{Value}' (Unit={Unit})", sampleValue.Value, sampleValue.Unit);
+                                        break;
                                     // state of charge (battery status)
-                                    if (double.TryParse(sampleValue.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out stateOfCharge))
-                                    {
+                                    case SampledValueMeasurand.SoC when double.TryParse(sampleValue.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out stateOfCharge):
                                         Logger.Verbose("MeterValues => SoC: '{0:0.0}'%", stateOfCharge);
-                                    }
-                                    else
-                                    {
-                                        Logger.Error("MeterValues => invalid value '{0}' (SoC)", sampleValue.Value);
-                                    }
+                                        break;
+                                    case SampledValueMeasurand.SoC:
+                                        Logger.Error("MeterValues => invalid value '{Value}' (SoC)", sampleValue.Value);
+                                        break;
                                 }
                             }
                         }
@@ -175,53 +164,50 @@ namespace OCPP.Core.Library
 
                             if (meterKwh >= 0)
                             {
-                               await UpdateConnectorStatus(connectorId, null, null, meterKwh, meterTime);
+                                await UpdateConnectorStatus(connectorId, null, null, meterKwh, meterTime);
                             }
 
                             if (currentChargeKw >= 0 || meterKwh >= 0 || stateOfCharge >= 0)
                             {
                                 if (ChargePointStatus.OnlineConnectors.ContainsKey(connectorId))
                                 {
-                                    OnlineConnectorStatus ocs = ChargePointStatus.OnlineConnectors[connectorId];
+                                    var ocs = ChargePointStatus.OnlineConnectors[connectorId];
                                     if (currentChargeKw >= 0) ocs.ChargeRateKw = currentChargeKw;
                                     if (meterKwh >= 0) ocs.MeterKwh = meterKwh;
                                     if (stateOfCharge >= 0) ocs.SoC = stateOfCharge;
                                 }
                                 else
                                 {
-                                    OnlineConnectorStatus ocs = new OnlineConnectorStatus();
+                                    var ocs = new OnlineConnectorStatus();
                                     if (currentChargeKw >= 0) ocs.ChargeRateKw = currentChargeKw;
                                     if (meterKwh >= 0) ocs.MeterKwh = meterKwh;
                                     if (stateOfCharge >= 0) ocs.SoC = stateOfCharge;
                                     if (ChargePointStatus.OnlineConnectors.TryAdd(connectorId, ocs))
                                     {
-                                        Logger.Verbose("MeterValues => Set OnlineConnectorStatus for ChargePoint={0} / Connector={1} / Values: {2}", ChargePointStatus?.Id, connectorId, msgMeterValue);
+                                        Logger.Verbose("MeterValues => Set OnlineConnectorStatus for ChargePoint={Id} / Connector={ConnectorId} / Values: {MsgMeterValue}", ChargePointStatus.Id, connectorId, msgMeterValue);
                                     }
                                     else
                                     {
-                                        Logger.Error("MeterValues => Error adding new OnlineConnectorStatus for ChargePoint={0} / Connector={1} / Values: {2}", ChargePointStatus?.Id, connectorId, msgMeterValue);
+                                        Logger.Error("MeterValues => Error adding new OnlineConnectorStatus for ChargePoint={Id} / Connector={ConnectorId} / Values: {MsgMeterValue}", ChargePointStatus?.Id, connectorId, msgMeterValue);
                                     }
                                 }
                             }
                         }
-                    }
-                    else
-                    {
-                        // Unknown charge station
-                        errorCode = ErrorCodes.GenericError;
+                        
                     }
                 }
-                
+
                 msgOut.JsonPayload = JsonConvert.SerializeObject(meterValuesResponse);
                 Logger.Verbose("MeterValues => Response serialized");
             }
             catch (Exception exp)
             {
-                Logger.Error(exp, "MeterValues => Exception: {0}", exp.Message);
+                Logger.Error(exp, "MeterValues => Exception: {Message}", exp.Message);
                 errorCode = ErrorCodes.InternalError;
             }
 
-            WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, msgMeterValue, errorCode);
+            if (ChargePointStatus != null)
+                WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, msgMeterValue, errorCode);
             return errorCode;
         }
     }

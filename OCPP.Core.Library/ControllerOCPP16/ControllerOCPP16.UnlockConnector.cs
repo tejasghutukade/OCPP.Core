@@ -17,15 +17,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
-using OCPP.Core.Library.Messages_OCPP16;
+using OCPP.Core.Library.Messages_OCPP16.OICS;
 
 namespace OCPP.Core.Library
 {
@@ -43,7 +37,7 @@ namespace OCPP.Core.Library
                 
                 if (unlockConnectorResponse == null) return;
         
-                var sendRequest = DbContext.SendRequests.Where(x => x.Uid == msgIn.UniqueId).FirstOrDefault();
+                var sendRequest = Queryable.Where<SendRequest>(DbContext.SendRequests, x => x.Uid == msgIn.UniqueId).FirstOrDefault();
                 if (sendRequest == null) return ;
 
 

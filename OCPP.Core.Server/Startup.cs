@@ -17,7 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -27,6 +26,8 @@ using Microsoft.Extensions.Hosting;
 using OCPP.Core.Database;
 using OCPP.Core.Library;
 using Serilog;
+
+
 namespace OCPP.Core.Server
 {
     public class Startup

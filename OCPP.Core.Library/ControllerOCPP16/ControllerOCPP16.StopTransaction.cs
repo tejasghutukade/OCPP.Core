@@ -17,71 +17,70 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
-using OCPP.Core.Database;
 using Newtonsoft.Json;
-
-using OCPP.Core.Library.Messages_OCPP16;
+using OCPP.Core.Database;
+using OCPP.Core.Library.Messages_OCPP16.OICP;
 
 namespace OCPP.Core.Library
 {
     public partial class ControllerOcpp16
     {
-        public async Task<string?> HandleStopTransaction(OcppMessage msgIn, OcppMessage msgOut)
+        private async Task<string?> HandleStopTransaction(OcppMessage msgIn, OcppMessage msgOut)
         {
             string? errorCode = null;
             var stopTransactionResponse = new StopTransactionResponse();
 
             try
             {
-
-                StopTransactionRequest? stopTransactionRequest =
-                    JsonConvert.DeserializeObject<StopTransactionRequest>(msgIn.JsonPayload);
-                if (stopTransactionRequest == null)
+                if (msgIn.JsonPayload != null)
                 {
-                    errorCode = "InvalidPayload, Transaction cannot be started";
-                    return errorCode;
-                }
-                else
-                {
-                    string? tagId = CleanChargeTagId(stopTransactionRequest.IdTag, Logger);
-
-                    int transactionId = stopTransactionRequest.TransactionId;
-
-                    ChargeTag chargeTag = ChargeTag.IsValid(DbContext, tagId);
-                    CpTagAccess cpTagAccess = CpTagAccess.IsValid(DbContext, chargeTag.Id, ChargePointStatus.Id);
-
-
-                    switch (cpTagAccess.GetChargeTagStatus())
+                    var stopTransactionRequest =
+                        JsonConvert.DeserializeObject<StopTransactionRequest>(msgIn.JsonPayload);
+                    if (stopTransactionRequest == null)
                     {
-                        case ChargeTagStatus.ConcurrentTx:
-                        case ChargeTagStatus.Accepted:
-                            // Check if the transaction is already started
-                            // If it is, return the transaction id
-                            stopTransactionResponse= await CompleteTransaction(transactionId, stopTransactionRequest, chargeTag,
-                                cpTagAccess);
+                        errorCode = "InvalidPayload, Transaction cannot be started";
+                        return errorCode;
+                    }
+                    else
+                    {
+                        var tagId = CleanChargeTagId(stopTransactionRequest.IdTag, Logger);
 
-                            break;
-                        default:
-                            stopTransactionResponse.IdTagInfo = new IdTagInfo()
-                            {
-                                Status = Enum.TryParse<IdTagInfoStatus>(cpTagAccess.CpTagStatus, out var idTagInfoStatus)
-                                    ? idTagInfoStatus
-                                    : IdTagInfoStatus.Invalid,
-                                ExpiryDate = cpTagAccess.Expiry ?? DateTime.Now.AddMinutes(-5),
-                                ParentIdTag = chargeTag.ParentTagId.ToString() ?? string.Empty
+                        var transactionId = stopTransactionRequest.TransactionId;
 
-                            };
-                            errorCode =
-                                "Invalid Blocked or Expired Tag! Either tha tag is not valid or not authorized to start a transaction";
-                            break;
+                        var chargeTag = ChargeTag.IsValid(DbContext, tagId);
+                        var cpTagAccess = CpTagAccess.IsValid(DbContext, chargeTag.Id, ChargePointStatus.Id);
+
+
+                        switch (cpTagAccess.GetChargeTagStatus())
+                        {
+                            case ChargeTagStatus.ConcurrentTx:
+                            case ChargeTagStatus.Accepted:
+                                // Check if the transaction is already started
+                                // If it is, return the transaction id
+                                stopTransactionResponse= await CompleteTransaction(transactionId, stopTransactionRequest, chargeTag,
+                                    cpTagAccess);
+                                break;
+                            case ChargeTagStatus.Blocked:
+                            case ChargeTagStatus.Expired:
+                            case ChargeTagStatus.Invalid:
+                            default:
+                                stopTransactionResponse.IdTagInfo = new IdTagInfo()
+                                {
+                                    Status = Enum.TryParse<IdTagInfoStatus>(cpTagAccess.CpTagStatus, out var idTagInfoStatus)
+                                        ? idTagInfoStatus
+                                        : IdTagInfoStatus.Invalid,
+                                    ExpiryDate = cpTagAccess.Expiry ?? DateTime.Now.AddMinutes(-5),
+                                    ParentIdTag = chargeTag.ParentTagId.ToString() ?? string.Empty
+
+                                };
+                                errorCode =
+                                    "Invalid Blocked or Expired Tag! Either tha tag is not valid or not authorized to start a transaction";
+                                break;
+                        }
+                        msgOut.JsonPayload = JsonConvert.SerializeObject(stopTransactionResponse);
+                        WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, stopTransactionResponse.IdTagInfo.Status.ToString(), errorCode);
                     }
                 }
-
-                
             }
             catch (Exception ex)
             {
@@ -89,15 +88,15 @@ namespace OCPP.Core.Library
                 errorCode = "Internal Server Error";
             }
 
-            WriteMessageLog(ChargePointStatus.Id, null, msgIn.Action, stopTransactionResponse.IdTagInfo.Status.ToString(), errorCode);
+            
             return errorCode;
         }
 
 
         private async Task<StopTransactionResponse> CompleteTransaction(int transactionId,StopTransactionRequest stopTransactionRequest,ChargeTag chargeTag, CpTagAccess cpTagAccess)
         {
-            var transaction = DbContext.Transactions.LastOrDefault(x=>x.TransactionId == transactionId);
-            StopTransactionResponse stopTransactionResponse = new StopTransactionResponse();
+            var transaction = Queryable.LastOrDefault<Transaction>(DbContext.Transactions, x=>x.TransactionId == transactionId);
+            var stopTransactionResponse = new StopTransactionResponse();
             if (transaction != null)
             {
                 transaction.MeterStop = (float) (double) stopTransactionRequest.MeterStop / 1000;

@@ -25,9 +25,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Localization;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
+using Serilog;
 
 namespace OCPP.Core.Management.Controllers
 {

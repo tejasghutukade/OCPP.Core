@@ -22,7 +22,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Serilog;
 using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
@@ -96,7 +95,7 @@ namespace OCPP.Core.Management.Controllers
 
                             if (string.IsNullOrEmpty(errorMsg))
                             {
-                                // Save tag in DB
+                                // Save tag in OCPP.Core.DB
                                 ChargePoint newChargePoint = new ChargePoint();
                                 newChargePoint.ChargePointId = cpvm.ChargePointId;
                                 newChargePoint.Name = cpvm.Name;

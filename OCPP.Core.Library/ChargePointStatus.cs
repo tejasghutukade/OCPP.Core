@@ -21,8 +21,9 @@ using System;
 using System.Collections.Generic;
 using System.Net.WebSockets;
 using Newtonsoft.Json;
-//using OCPP.Core.DatabaseOld;
 using OCPP.Core.Database;
+
+//using OCPP.Core.DatabaseOld;
 
 namespace OCPP.Core.Library
 {

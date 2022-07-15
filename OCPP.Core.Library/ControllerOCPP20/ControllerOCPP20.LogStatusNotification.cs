@@ -17,11 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Library.Messages_OCPP20;
 
@@ -36,9 +31,9 @@ namespace OCPP.Core.Library
             Logger.Verbose("Processing LogStatusNotification...");
             LogStatusNotificationResponse logStatusNotificationResponse = new LogStatusNotificationResponse();
             logStatusNotificationResponse.CustomData = new CustomDataType();
-            logStatusNotificationResponse.CustomData.VendorId = VendorId;
+            logStatusNotificationResponse.CustomData.VendorId = Library.ControllerOcpp20.VendorId;
 
-            string status = null;
+            string? status = null;
 
             try
             {

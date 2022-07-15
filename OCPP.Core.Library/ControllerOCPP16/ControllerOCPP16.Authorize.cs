@@ -17,45 +17,47 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Library.Messages_OCPP16;
+using OCPP.Core.Library.Messages_OCPP16.OICP;
 
 namespace OCPP.Core.Library
 {
     public partial class ControllerOcpp16
     {
-        public async Task<string?> HandleAuthorize(OcppMessage msgIn, OcppMessage msgOut)
+        private Task<string?> HandleAuthorize(OcppMessage msgIn, OcppMessage msgOut)
         {
             string? errorCode = null;
-            AuthorizeResponse authorizeResponse = new AuthorizeResponse();
-            authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
-            bool error = false;
+            var authorizeResponse = new AuthorizeResponse
+            {
+                IdTagInfo =
+                {
+                    Status = IdTagInfoStatus.Invalid
+                }
+            };
             string? idTag = null;
             try
             {
                 Logger.Verbose("Processing authorize request...");
-                AuthorizeRequest? authorizeRequest = JsonConvert.DeserializeObject<AuthorizeRequest>(msgIn.JsonPayload);
-                Logger.Verbose("Authorize => Message deserialized");
-                idTag = CleanChargeTagId(authorizeRequest?.IdTag, Logger);
-                
-                
-                IdTagInfoStatus chargeTagStatus;
-                
-                ChargeTag ct = ChargeTag.IsValid(DbContext,idTag);
+                if (msgIn.JsonPayload != null)
+                {
+                    var authorizeRequest = JsonConvert.DeserializeObject<AuthorizeRequest>(msgIn.JsonPayload);
+                    Logger.Verbose("Authorize => Message deserialized");
+                    idTag = ControllerBase.CleanChargeTagId(authorizeRequest?.IdTag, Logger);
+                }
+
+
+                var ct = ChargeTag.IsValid(DbContext,idTag);
 
                 if (ct.GetChargeTagStatus() != ChargeTagStatus.Invalid)
                 {
-                    CpTagAccess cptagaccess = CpTagAccess.IsValid(DbContext, ct.Id, ChargePointStatus.Id);
-                    if (cptagaccess.GetChargeTagStatus() != ChargeTagStatus.Invalid)
+                    var cpTagAccess = CpTagAccess.IsValid(DbContext, ct.Id, ChargePointStatus.Id);
+                    if (cpTagAccess.GetChargeTagStatus() != ChargeTagStatus.Invalid)
                     {
                         authorizeResponse.IdTagInfo.ParentIdTag = ct.ParentTagId.ToString()?? string.Empty;
-                        authorizeResponse.IdTagInfo.ExpiryDate = cptagaccess.Expiry?? DateTimeOffset.UtcNow.AddMinutes(5);   // default: 5 minutes
-                        authorizeResponse.IdTagInfo.Status = Enum.TryParse<IdTagInfoStatus>(cptagaccess.GetChargeTagStatus().ToString(), out chargeTagStatus) ? chargeTagStatus : IdTagInfoStatus.Invalid;
+                        authorizeResponse.IdTagInfo.ExpiryDate = cpTagAccess.Expiry?? DateTimeOffset.UtcNow.AddMinutes(5);   // default: 5 minutes
+                        authorizeResponse.IdTagInfo.Status = Enum.TryParse<IdTagInfoStatus>(cpTagAccess.GetChargeTagStatus().ToString(), out var chargeTagStatus) ? chargeTagStatus : IdTagInfoStatus.Invalid;
                         msgOut.JsonPayload = JsonConvert.SerializeObject(authorizeResponse);
                     }
                 }
@@ -65,7 +67,7 @@ namespace OCPP.Core.Library
                 authorizeResponse.IdTagInfo.ExpiryDate = DateTimeOffset.UtcNow.AddMinutes(-5);   // default: 5 minutes
                 authorizeResponse.IdTagInfo.Status = IdTagInfoStatus.Invalid;
                 msgOut.JsonPayload = JsonConvert.SerializeObject(authorizeResponse);
-                return errorCode = "Charge Tag is either not valid or not registered or not authorized to access this Charge Point";
+                return Task.FromResult(errorCode = "Charge Tag is either not valid or not registered or not authorized to access this Charge Point")!;
 
 
             }
@@ -76,7 +78,7 @@ namespace OCPP.Core.Library
             }
 
             WriteMessageLog(ChargePointStatus.Id, null,msgIn.Action, $"'{idTag}'=>{authorizeResponse.IdTagInfo?.Status}", errorCode);
-            return errorCode;
+            return Task.FromResult(errorCode)!;
         }
         
     }

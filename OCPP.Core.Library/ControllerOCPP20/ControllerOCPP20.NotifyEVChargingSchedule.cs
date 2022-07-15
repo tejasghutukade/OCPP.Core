@@ -32,62 +32,49 @@ namespace OCPP.Core.Library
             Logger.Verbose("Processing NotifyEVChargingSchedule...");
             NotifyEvChargingScheduleResponse notifyEvChargingScheduleResponse = new NotifyEvChargingScheduleResponse();
             notifyEvChargingScheduleResponse.CustomData = new CustomDataType();
-            notifyEvChargingScheduleResponse.CustomData.VendorId = VendorId;
+            notifyEvChargingScheduleResponse.CustomData.VendorId = Library.ControllerOcpp20.VendorId;
 
             StringBuilder periods = new StringBuilder();
             int connectorId = 0;
 
             try
             {
-                NotifyEvChargingScheduleRequest notifyEvChargingScheduleRequest = JsonConvert.DeserializeObject<NotifyEvChargingScheduleRequest>(msgIn.JsonPayload);
+                var notifyEvChargingScheduleRequest = JsonConvert.DeserializeObject<NotifyEvChargingScheduleRequest>(msgIn.JsonPayload);
                 Logger.Verbose("NotifyEVChargingSchedule => Message deserialized");
 
-
-                if (ChargePointStatus != null)
+                // Known charge station
+                if (notifyEvChargingScheduleRequest?.ChargingSchedule?.ChargingSchedulePeriod != null)
                 {
-                    // Known charge station
-                    if (notifyEvChargingScheduleRequest.ChargingSchedule != null)
+                    // Concat all periods and write them in message log...
+
+                    var timeBase = notifyEvChargingScheduleRequest.TimeBase;
+                    foreach (var period in notifyEvChargingScheduleRequest.ChargingSchedule.ChargingSchedulePeriod)
                     {
-                        if (notifyEvChargingScheduleRequest.ChargingSchedule?.ChargingSchedulePeriod != null)
+                        if (periods.Length > 0)
                         {
-                            // Concat all periods and write them in messag log...
+                            periods.Append(" | ");
+                        }
 
-                            DateTimeOffset timeBase = notifyEvChargingScheduleRequest.TimeBase;
-                            foreach (ChargingSchedulePeriodType period in notifyEvChargingScheduleRequest
-                                         .ChargingSchedule?.ChargingSchedulePeriod)
-                            {
-                                if (periods.Length > 0)
-                                {
-                                    periods.Append(" | ");
-                                }
+                        var time = timeBase.AddSeconds(period.StartPeriod);
+                        periods.Append($"{time:O}: {period.Limit}{notifyEvChargingScheduleRequest.ChargingSchedule.ChargingRateUnit.ToString()}");
 
-                                DateTimeOffset time = timeBase.AddSeconds(period.StartPeriod);
-                                periods.Append(string.Format("{0}: {1}{2}", time.ToString("O"), period.Limit,
-                                    notifyEvChargingScheduleRequest.ChargingSchedule.ChargingRateUnit.ToString()));
-
-                                if (period.NumberPhases > 0)
-                                {
-                                    periods.Append(string.Format(" ({0} Phases)", period.NumberPhases));
-                                }
-                            }
+                        if (period.NumberPhases > 0)
+                        {
+                            periods.Append($" ({period.NumberPhases} Phases)");
                         }
                     }
+                }
 
-                    connectorId = notifyEvChargingScheduleRequest.EvseId;
-                    Logger.Information("NotifyEVChargingSchedule => {0}", periods.ToString());
-                }
-                else
-                {
-                    // Unknown charge station
-                    errorCode = ErrorCodes.GenericError;
-                }
+                if (notifyEvChargingScheduleRequest != null) connectorId = notifyEvChargingScheduleRequest.EvseId;
+                
+                Logger.Information("NotifyEVChargingSchedule => {Periods}", periods.ToString());
 
                 msgOut.JsonPayload = JsonConvert.SerializeObject(notifyEvChargingScheduleResponse);
                 Logger.Verbose("NotifyEVChargingSchedule => Response serialized");
             }
             catch (Exception exp)
             {
-                Logger.Error(exp, "NotifyEVChargingSchedule => Exception: {0}", exp.Message);
+                Logger.Error(exp, "NotifyEVChargingSchedule => Exception: {Message}", exp.Message);
                 errorCode = ErrorCodes.InternalError;
             }
 

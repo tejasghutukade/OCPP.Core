@@ -91,7 +91,7 @@ namespace OCPP.Core.Management.Controllers
 
                         if (string.IsNullOrEmpty(errorMsg))
                         {
-                            // Save tag in DB
+                            // Save tag in OCPP.Core.DB
                             var newTag = new ChargeTag
                             {
                                 TagId = chargeTagViewModel.TagId,

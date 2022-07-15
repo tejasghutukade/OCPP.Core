@@ -17,16 +17,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
-using Serilog;
 using OCPP.Core.Database;
+using Serilog;
 
 namespace OCPP.Core.Library
 {
-    public partial class ControllerBase
+    public class ControllerBase
     {
         /// <summary>
         /// Configuration context for reading app settings
@@ -51,12 +48,12 @@ namespace OCPP.Core.Library
         /// <summary>
         /// Connected Chargepoint class for the current session
         ///</summary>
-        protected ChargePoint ConnectedChargePoint { get; set; }
+        private ChargePoint ConnectedChargePoint { get; set; }
 
         /// <summary>
         /// Constructor
         /// </summary>
-        public ControllerBase(IConfiguration config, ILogger logger,OcppCoreContext dbContext)
+        protected ControllerBase(IConfiguration config, ILogger logger,OcppCoreContext dbContext)
         {
             Configuration = config;
             DbContext = dbContext;
@@ -73,43 +70,43 @@ namespace OCPP.Core.Library
         /// <summary>
         /// Helper function for creating and updating the ConnectorStatus in then database
         /// </summary>
-        protected async Task<bool> UpdateConnectorStatus(int connectorId, string status, DateTimeOffset? statusTime, double? meter, DateTimeOffset? meterTime)
+        protected async Task<bool> UpdateConnectorStatus(int connectorId, string? status, DateTimeOffset? statusTime, double? meter, DateTimeOffset? meterTime)
         {
             try
             {
-                using (var dbContext = DbContext)
+                await using var dbContext = DbContext;
+                var connectorStatus = dbContext.Find<ConnectorStatus>(ChargePointStatus.Id, connectorId);
+                if (connectorStatus == null)
                 {
-                    ConnectorStatus? connectorStatus = dbContext.Find<ConnectorStatus>(ChargePointStatus.Id, connectorId);
-                    if (connectorStatus == null)
+                    // no matching entry => create connector status
+                    connectorStatus = new ConnectorStatus
                     {
-                        // no matching entry => create connector status
-                        connectorStatus = new ConnectorStatus();
-                        connectorStatus.ChargePointId = ChargePointStatus.Id;
-                        connectorStatus.ConnectorId = connectorId;
-                        
-                        Logger.Verbose("UpdateConnectorStatus => Creating new DB-ConnectorStatus: ID={ChargePointId} / Connector={ConnectorId}", connectorStatus.ChargePointId, connectorStatus.ConnectorId);
-                        dbContext.Add<ConnectorStatus>(connectorStatus);
-                    }
+                        ChargePointId = ChargePointStatus.Id,
+                        ConnectorId = connectorId
+                    };
 
-                    if (!string.IsNullOrEmpty(status))
-                    {
-                        connectorStatus.LastStatus = status;
-                        connectorStatus.LastStatusTime = ((statusTime.HasValue) ? statusTime.Value : DateTimeOffset.UtcNow).DateTime;
-                    }
-
-                    if (meter.HasValue)
-                    {
-                        connectorStatus.LastMeter = (float?) meter.Value;
-                        connectorStatus.LastMeterTime = ((meterTime.HasValue) ? meterTime.Value : DateTimeOffset.UtcNow).DateTime;
-                    }
-                    await dbContext.SaveChangesAsync();
-                    Logger.Information("UpdateConnectorStatus => Save ConnectorStatus: ID={0} / Connector={1} / Status={2} / Meter={3}", connectorStatus.ChargePointId, connectorId, status, meter);
-                    return true;
+                    Logger.Verbose("UpdateConnectorStatus => Creating new OCPP.Core.DB-ConnectorStatus: ID={ChargePointId} / Connector={ConnectorId}", connectorStatus.ChargePointId, connectorStatus.ConnectorId);
+                    dbContext.Add<ConnectorStatus>(connectorStatus);
                 }
+
+                if (!string.IsNullOrEmpty(status))
+                {
+                    connectorStatus.LastStatus = status;
+                    connectorStatus.LastStatusTime = (statusTime ?? DateTimeOffset.UtcNow).DateTime;
+                }
+
+                if (meter.HasValue)
+                {
+                    connectorStatus.LastMeter = (float?) meter.Value;
+                    connectorStatus.LastMeterTime = (meterTime ?? DateTimeOffset.UtcNow).DateTime;
+                }
+                await dbContext.SaveChangesAsync();
+                Logger.Information("UpdateConnectorStatus => Save ConnectorStatus: ID={ChargePointId} / Connector={ConnectorId} / Status={Status} / Meter={Meter}", connectorStatus.ChargePointId, connectorId, status, meter);
+                return true;
             }
             catch (Exception exp)
             {
-                Logger.Error(exp, "UpdateConnectorStatus => Exception writing connector status (ID={0} / Connector={1}): {2}", ChargePointStatus?.Id, connectorId, exp.Message);
+                Logger.Error(exp, "UpdateConnectorStatus => Exception writing connector status (ID={Id} / Connector={ConnectorId}): {Message}", ChargePointStatus.Id, connectorId, exp.Message);
             }
 
             return false;
@@ -131,12 +128,6 @@ namespace OCPP.Core.Library
             return idTag;
         }
 
-        protected static DateTimeOffset MaxExpiryDate
-        {
-            get
-            {
-                return new DateTime(2199, 12, 31);
-            }
-        }
+        protected static DateTimeOffset MaxExpiryDate => new DateTime(2199, 12, 31);
     }
 }

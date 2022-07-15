@@ -46,7 +46,7 @@ namespace OCPP.Core.Library
         /// <summary>
         /// JSON-Payload
         /// </summary>
-        public string JsonPayload { get; set; }
+        public string? JsonPayload { get; set; }
 
         /// <summary>
         /// Error-Code
@@ -75,7 +75,7 @@ namespace OCPP.Core.Library
         /// <summary>
         /// Constructor
         /// </summary>
-        public OcppMessage(string messageType, string uniqueId, string action, string jsonPayload)
+        public OcppMessage(string messageType, string uniqueId, string action, string? jsonPayload)
         {
             MessageType = messageType;
             UniqueId = uniqueId;

@@ -1,11 +1,6 @@
-using System;
-using System.Collections.Generic;
-
-using System.Globalization;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
-namespace OCPP.Core.Library.Messages_OCPP16;
+namespace OCPP.Core.Library.Messages_OCPP16.OICS;
 
 /// <summary>
 /// A geographical coordinate

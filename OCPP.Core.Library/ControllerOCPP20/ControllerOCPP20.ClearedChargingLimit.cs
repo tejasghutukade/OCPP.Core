@@ -17,11 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Library.Messages_OCPP20;
 
@@ -36,9 +31,9 @@ namespace OCPP.Core.Library
             Logger.Verbose("Processing ClearedChargingLimit...");
             ClearedChargingLimitResponse clearedChargingLimitResponse = new ClearedChargingLimitResponse();
             clearedChargingLimitResponse.CustomData = new CustomDataType();
-            clearedChargingLimitResponse.CustomData.VendorId = VendorId;
+            clearedChargingLimitResponse.CustomData.VendorId = Library.ControllerOcpp20.VendorId;
 
-            string source = null;
+            string? source = null;
             int connectorId = 0;
 
             try

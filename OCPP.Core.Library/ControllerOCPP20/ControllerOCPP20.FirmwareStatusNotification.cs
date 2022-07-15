@@ -17,11 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Library.Messages_OCPP20;
 
@@ -36,9 +31,9 @@ namespace OCPP.Core.Library
             Logger.Verbose("Processing FirmwareStatusNotification...");
             FirmwareStatusNotificationResponse firmwareStatusNotificationResponse = new FirmwareStatusNotificationResponse();
             firmwareStatusNotificationResponse.CustomData = new CustomDataType();
-            firmwareStatusNotificationResponse.CustomData.VendorId = VendorId;
+            firmwareStatusNotificationResponse.CustomData.VendorId = Library.ControllerOcpp20.VendorId;
 
-            string status = null;
+            string? status = null;
 
             try
             {

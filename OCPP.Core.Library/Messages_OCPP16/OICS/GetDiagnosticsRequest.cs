@@ -1,6 +1,7 @@
-namespace OCPP.Core.Library.Messages_OCPP16;
-using System;
 using Newtonsoft.Json;
+
+namespace OCPP.Core.Library.Messages_OCPP16.OICS;
+
 public partial class GetDiagnosticsRequest
 {
     [JsonProperty("location", Required = Required.Always)]

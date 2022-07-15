@@ -17,14 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
-
 using OCPP.Core.Library.Messages_OCPP20;
 
 namespace OCPP.Core.Library
@@ -38,9 +32,9 @@ namespace OCPP.Core.Library
             Logger.Verbose("Processing NotifyChargingLimit...");
             NotifyChargingLimitResponse notifyChargingLimitResponse = new NotifyChargingLimitResponse();
             notifyChargingLimitResponse.CustomData = new CustomDataType();
-            notifyChargingLimitResponse.CustomData.VendorId = VendorId;
+            notifyChargingLimitResponse.CustomData.VendorId = Library.ControllerOcpp20.VendorId;
 
-            string source = null;
+            string? source = null;
             StringBuilder periods = new StringBuilder();
             int connectorId = 0;
 

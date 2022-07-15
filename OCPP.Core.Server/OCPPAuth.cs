@@ -3,7 +3,6 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
 using OCPP.Core.Database;
-using ILogger = Serilog.ILogger;
 
 namespace OCPP.Core.Server;
 

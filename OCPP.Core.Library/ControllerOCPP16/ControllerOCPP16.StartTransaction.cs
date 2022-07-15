@@ -17,58 +17,54 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Library.Messages_OCPP16;
+using OCPP.Core.Library.Messages_OCPP16.OICP;
 
 namespace OCPP.Core.Library
 {
     public partial class ControllerOcpp16
     {
-        public async Task<string?> HandleStartTransaction(OcppMessage msgIn, OcppMessage msgOut)
+        private async Task<string?> HandleStartTransaction(OcppMessage msgIn, OcppMessage msgOut)
         {
             string? errorCode = null;
-            StartTransactionResponse startTransactionResponse;
-            
-            int connectorId = -1;
 
             try
             {
-                StartTransactionRequest? str = JsonConvert.DeserializeObject<StartTransactionRequest>(msgIn.JsonPayload);
-                if (str == null)
+                if (msgIn.JsonPayload == null) return string.Empty;
+                var startTransactionRequest = JsonConvert.DeserializeObject<StartTransactionRequest>(msgIn.JsonPayload);
+                StartTransactionResponse startTransactionResponse;
+                
+                if (startTransactionRequest == null)
                 {
                     errorCode = "InvalidPayload, Transaction cannot be started";
                     return errorCode;
                 }
                 else
                 {
-                    //Process Start Trasaction Request
+                    //Process Start Transaction Request
                 
                 
-                    connectorId = str.ConnectorId;
-                    var tagId = CleanChargeTagId(str?.IdTag, Logger);
+                    var connectorId = startTransactionRequest.ConnectorId;
+                    var tagId = CleanChargeTagId(startTransactionRequest.IdTag, Logger);
 
                     //first check if tag is valid and authorized to start a transaction
 
-                    ChargeTag chargeTag = ChargeTag.IsValid(DbContext,tagId);
+                    var chargeTag = ChargeTag.IsValid(DbContext,tagId);
 
-                    CpTagAccess cpTagAccess = CpTagAccess.IsValid(DbContext, chargeTag.Id, ChargePointStatus.Id);
+                    var cpTagAccess = CpTagAccess.IsValid(DbContext, chargeTag.Id, ChargePointStatus.Id);
 
                     switch (cpTagAccess.GetChargeTagStatus())
                     {
                         case ChargeTagStatus.Accepted:
                             //start new transaction
-                            startTransactionResponse = await StartTransaction(connectorId,str,chargeTag,cpTagAccess);
+                            startTransactionResponse = await StartTransaction(connectorId,startTransactionRequest,chargeTag,cpTagAccess);
                             break;
                         case ChargeTagStatus.ConcurrentTx:
                             // Check if the transaction is already started
                             // If it is, return the transaction id
-                            startTransactionResponse = await ConcurrentTransaction(connectorId,str,chargeTag,cpTagAccess);
+                            startTransactionResponse = await ConcurrentTransaction(connectorId,startTransactionRequest,chargeTag,cpTagAccess);
                             break;
                         case ChargeTagStatus.Blocked:
                             
@@ -100,7 +96,7 @@ namespace OCPP.Core.Library
                             break;
                         
                         case ChargeTagStatus.Invalid:
-                            default:
+                        default:
                             startTransactionResponse = new StartTransactionResponse
                             {
                                 IdTagInfo = new IdTagInfo
@@ -114,9 +110,10 @@ namespace OCPP.Core.Library
                             errorCode = "Invalid Tag! Either tha tag is not valid or not authorized to start a transaction";
                             break;
                     }
-
+                    WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, startTransactionResponse.IdTagInfo.Status.ToString(), errorCode);
                 }
-                WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, startTransactionResponse.IdTagInfo.Status.ToString(), errorCode);
+                
+                msgOut.JsonPayload = JsonConvert.SerializeObject(startTransactionResponse);
                 return string.Empty;
             }
             catch (Exception exp)
@@ -130,17 +127,19 @@ namespace OCPP.Core.Library
     
         private async Task<StartTransactionResponse> StartTransaction(int connectorId,StartTransactionRequest str ,ChargeTag chargeTag, CpTagAccess cpTagAccess )
         {
-            StartTransactionResponse startTransactionResponse = new StartTransactionResponse();
+            var startTransactionResponse = new StartTransactionResponse();
              //Start Transaction
-            UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), str.Timestamp, (double)str.MeterStart / 1000, str.Timestamp);
-            Transaction transaction = new Transaction();
-            transaction.ChargePointId = ChargePointStatus.Id;
-            transaction.ConnectorId = connectorId;
-            transaction.MeterStart = (float) ((double)str.MeterStart / 1000);;
-            transaction.StartTagId = chargeTag.Id;
-            transaction.StartTime = str.Timestamp.DateTime;
-            
-            transaction.TransactionStatus = TransactionStatus.Started.ToString();
+            await UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), str.Timestamp, (double)str.MeterStart / 1000, str.Timestamp);
+            var transaction = new Transaction
+            {
+                ChargePointId = ChargePointStatus.Id,
+                ConnectorId = connectorId,
+                MeterStart = (float) ((double)str.MeterStart / 1000),
+                StartTagId = chargeTag.Id,
+                StartTime = str.Timestamp.DateTime,
+                TransactionStatus = TransactionStatus.Started.ToString()
+            };
+
             DbContext.Transactions.Add(transaction);
             
             cpTagAccess.CpTagStatus = ChargeTagStatus.ConcurrentTx.ToString();
@@ -152,7 +151,7 @@ namespace OCPP.Core.Library
             
             await DbContext.SaveChangesAsync();
             
-            UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), str.Timestamp, (double)str.MeterStart / 1000, str.Timestamp);
+            await UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), str.Timestamp, (double)str.MeterStart / 1000, str.Timestamp);
             
             startTransactionResponse.TransactionId = transaction.TransactionId;
             
@@ -173,8 +172,8 @@ namespace OCPP.Core.Library
             var currentTx = DbContext.Transactions.LastOrDefault(x=>x.ChargePointId == ChargePointStatus.Id && x.ConnectorId==connectorId && x.StartTagId == ct.Id && x.TransactionStatus == nameof(TransactionStatus.Started));
             if (currentTx != null)
             {
-                UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), str.Timestamp, (double)str.MeterStart / 1000, str.Timestamp);
-                IdTagInfo idTagInfo = new IdTagInfo
+                await UpdateConnectorStatus(connectorId, ConnectorStatusEnum.Occupied.ToString(), str.Timestamp, (double)str.MeterStart / 1000, str.Timestamp);
+                var idTagInfo = new IdTagInfo
                 {
                     Status = IdTagInfoStatus.ConcurrentTx,
                     ExpiryDate = cpTagAccess.Expiry??DateTime.Now.AddMinutes(5),
@@ -189,7 +188,7 @@ namespace OCPP.Core.Library
             }
             else
             {
-                currentTx = DbContext.Transactions.LastOrDefault(x=>x.ConnectorId==connectorId && x.ChargePointId == ChargePointStatus.Id);
+                currentTx = Queryable.LastOrDefault<Transaction>(DbContext.Transactions, x=>x.ConnectorId==connectorId && x.ChargePointId == ChargePointStatus.Id);
 
                 if (currentTx != null)
                 {
@@ -199,7 +198,7 @@ namespace OCPP.Core.Library
                     }
                 }
 
-                IdTagInfo idTagInfo = new IdTagInfo
+                var idTagInfo = new IdTagInfo
                 {
                     Status = IdTagInfoStatus.Invalid,
                     ExpiryDate = cpTagAccess.Expiry??DateTime.Now.AddMinutes(5),

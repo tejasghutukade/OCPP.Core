@@ -17,14 +17,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Serilog;
 using Newtonsoft.Json;
-
 using OCPP.Core.Library.Messages_OCPP16;
+using OCPP.Core.Library.Messages_OCPP16.OICP;
 
 namespace OCPP.Core.Library
 {
@@ -46,7 +41,7 @@ namespace OCPP.Core.Library
 
                 connectorId = statusNotificationRequest.ConnectorId;
 
-                // Write raw status in DB
+                // Write raw status in OCPP.Core.DB
                 msgWritten = WriteMessageLog(ChargePointStatus.Id, connectorId, msgIn.Action, string.Format("Info={0} / Status={1} / ", statusNotificationRequest.Info, statusNotificationRequest.Status), statusNotificationRequest.ErrorCode.ToString());
 
                 ConnectorStatusEnum newStatus = ConnectorStatusEnum.Undefined;

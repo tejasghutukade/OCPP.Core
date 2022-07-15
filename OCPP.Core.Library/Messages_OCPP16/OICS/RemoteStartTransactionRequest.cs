@@ -1,9 +1,6 @@
-using System;
-
-namespace OCPP.Core.Library.Messages_OCPP16;
-
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+
+namespace OCPP.Core.Library.Messages_OCPP16.OICS;
 
 public partial class RemoteStartTransactionRequest
 {

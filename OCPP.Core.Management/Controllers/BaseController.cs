@@ -21,7 +21,6 @@ using System;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-using OCPP.Core.Database;
 using OCPP.Core.Management.Models;
 
 namespace OCPP.Core.Management.Controllers

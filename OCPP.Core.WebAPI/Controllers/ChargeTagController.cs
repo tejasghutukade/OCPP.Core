@@ -1,7 +1,7 @@
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using OCPP.Core.Database;
-using Serilog;
+
 namespace OCPP.Core.WebAPI.Controllers;
 
 [ApiController]

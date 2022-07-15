@@ -1,9 +1,7 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
-using OCPP.Core.Library.Messages_OCPP16;
+using OCPP.Core.Library.Messages_OCPP16.OICP;
+using OCPP.Core.Library.Messages_OCPP16.OICS;
 
 namespace OCPP.Core.Library;
 
@@ -16,7 +14,7 @@ public partial class ControllerOcpp16
 
         if (response == null) return errorCode= "Invalid JSON";
         
-        var sendRequest = DbContext.SendRequests.Where(x => x.Uid == msgIn.UniqueId).FirstOrDefault();
+        var sendRequest = Queryable.Where<SendRequest>(DbContext.SendRequests, x => x.Uid == msgIn.UniqueId).FirstOrDefault();
         
         if (sendRequest == null) return errorCode= "Invalid UniqueId. No Send-Request Request found";
         
@@ -39,7 +37,7 @@ public partial class ControllerOcpp16
             
             //Get last status of the Chargepoint
             
-            var lastStatus = DbContext.ConnectorStatuses.LastOrDefault(x=> x.ChargePointId == sendRequest.ChargePointId && x.ConnectorId == sendRequest.ConnectorId);
+            var lastStatus = Queryable.LastOrDefault<ConnectorStatus>(DbContext.ConnectorStatuses, x=> x.ChargePointId == sendRequest.ChargePointId && x.ConnectorId == sendRequest.ConnectorId);
             if (lastStatus == null) return errorCode= "No last status found";
             
 

@@ -17,10 +17,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Serilog;
 using Newtonsoft.Json;
 using OCPP.Core.Database;
 using OCPP.Core.Library.Messages_OCPP20;
@@ -144,8 +140,7 @@ namespace OCPP.Core.Library
                         #region Update Transaction
                         using (var dbContext = DbContext)
                         {
-                            Transaction transaction = dbContext.Transactions
-                                .Where(t => t.Uid == transactionEventRequest.TransactionInfo.TransactionId)
+                            Transaction transaction = Queryable.Where<Transaction>(dbContext.Transactions, t => t.Uid == transactionEventRequest.TransactionInfo.TransactionId)
                                 .OrderByDescending(t => t.TransactionId)
                                 .FirstOrDefault();
                             if (transaction == null ||
@@ -156,8 +151,7 @@ namespace OCPP.Core.Library
                                 // => find latest transaction for the charge point and check if its open
                                 Logger.Warning("UpdateTransaction => Unknown or closed transaction uid={0}", transactionEventRequest.TransactionInfo?.TransactionId);
                                 // find latest transaction for this charge point
-                                transaction = dbContext.Transactions
-                                    .Where(t => t.ChargePointId == ChargePointStatus.Id && t.ConnectorId == connectorId)
+                                transaction = Queryable.Where<Transaction>(dbContext.Transactions, t => t.ChargePointId == ChargePointStatus.Id && t.ConnectorId == connectorId)
                                     .OrderByDescending(t => t.TransactionId)
                                     .FirstOrDefault();
 
@@ -244,8 +238,7 @@ namespace OCPP.Core.Library
                                 }
                             }
 
-                            Transaction transaction = dbContext.Transactions
-                                .Where(t => t.Uid == transactionEventRequest.TransactionInfo.TransactionId)
+                            Transaction transaction = Queryable.Where<Transaction>(dbContext.Transactions, t => t.Uid == transactionEventRequest.TransactionInfo.TransactionId)
                                 .OrderByDescending(t => t.TransactionId)
                                 .FirstOrDefault();
                             if (transaction == null ||
@@ -256,8 +249,7 @@ namespace OCPP.Core.Library
                                 // => find latest transaction for the charge point and check if its open
                                 Logger.Warning("EndTransaction => Unknown or closed transaction uid={0}", transactionEventRequest.TransactionInfo?.TransactionId);
                                 // find latest transaction for this charge point
-                                transaction = dbContext.Transactions
-                                    .Where(t => t.ChargePointId == ChargePointStatus.Id && t.ConnectorId == connectorId)
+                                transaction = Queryable.Where<Transaction>(dbContext.Transactions, t => t.ChargePointId == ChargePointStatus.Id && t.ConnectorId == connectorId)
                                     .OrderByDescending(t => t.TransactionId)
                                     .FirstOrDefault();
 

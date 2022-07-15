@@ -27,8 +27,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using Serilog;
 using OCPP.Core.Database;
+using Serilog;
 using OCPP.Core.Management.Models;
 
 namespace OCPP.Core.Management.Controllers

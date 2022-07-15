@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-namespace OCPP.Core.Library.Messages_OCPP16
+namespace OCPP.Core.Library.Messages_OCPP16.OICP
 {
 #pragma warning disable // Disable all warnings
 
