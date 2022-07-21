@@ -7,7 +7,7 @@ using Serilog;
 
 namespace OCPP.Core.Database
 {
-    public partial class OcppCoreContext : DbContext
+    public class OcppCoreContext : DbContext
     {
         
 
@@ -323,6 +323,9 @@ namespace OCPP.Core.Database
             OnModelCreatingPartial(modelBuilder);
         }
 
-        partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+        private void OnModelCreatingPartial(ModelBuilder modelBuilder)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

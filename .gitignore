@@ -60,6 +60,7 @@ OCPP.Core.ReactWebAPI/
 OCPP.Core.WebAPIReact/
 soft-ui-dashboard-pro-react-v3.1.0/
 tokyoUI/
+OCPP.Core.WebAPI/appsettings.json
 # StyleCop
 StyleCopReport.xml
 

@@ -1,4 +1,5 @@
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OCPP.Core.Database;
 using OCPP.Core.WebAPI.Dtos;
@@ -21,11 +22,10 @@ public class ChargePointController: ControllerBase
         _dbContext = dbContext;
         _mapper = mapper;
     }
-    
+
     [HttpGet]
     public IEnumerable<ChargePointDto> Get()
     {
-        _logger.LogError("Get all charge points");
         var list = _dbContext.ChargePoints.ToList();
         var mappedList = _mapper.Map<List<ChargePointDto>>(list);
         return mappedList;

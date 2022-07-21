@@ -35,8 +35,8 @@ namespace OCPP.Core.Server
         /// <summary>
         /// ILogger object
         /// </summary>
-       
-        public IConfiguration Configuration { get; }
+
+        private IConfiguration Configuration { get; }
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -53,8 +53,8 @@ namespace OCPP.Core.Server
                     ServerVersion.Parse("8.0.28-mysql")),ServiceLifetime.Transient);
             services.AddTransient<OcppAuth>();
             
-            services.AddTransient<ControllerOcpp16>();
-            services.AddTransient<ControllerOcpp20>();
+            services.AddScoped<ControllerOcpp16>();
+            services.AddScoped<ControllerOcpp20>();
             services.AddControllers();
             
         }
@@ -74,14 +74,11 @@ namespace OCPP.Core.Server
             }
 
             // Set WebSocketsOptions
-            var webSocketOptions = new WebSocketOptions() 
-            {
-                ReceiveBufferSize = 8 * 1024
-                
-            };
+            //var webSocketOptions = new WebSocketOptions();
+            
 
             // Accept WebSocket
-            app.UseWebSockets(webSocketOptions);
+            app.UseWebSockets();
 
             // Integrate custom OCPP middleware for message processing
             app.UseOcppMiddleware();
